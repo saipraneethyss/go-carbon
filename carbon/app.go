@@ -19,6 +19,7 @@ import (
 	"github.com/lomik/go-carbon/receiver"
 	"github.com/lomik/go-carbon/tags"
 	"github.com/lomik/zapwriter"
+	"github.com/lomik/go-carbon/helper/metrics"
 
 	// register receivers
 	_ "github.com/lomik/go-carbon/receiver/http"
@@ -47,6 +48,7 @@ type App struct {
 	Collector      *Collector // (!!!) Should be re-created on every change config/modules
 	PromRegisterer prometheus.Registerer
 	PromRegistry   *prometheus.Registry
+	// FileScan			 *fileScan
 	exit           chan bool
 }
 
@@ -307,15 +309,25 @@ func (app *App) Start() (err error) {
 	}()
 
 	conf := app.Config
+	// idxUptChan := make(chan carbonserver.MetricUpdate,1000)
+	idxUptChan := make(chan metrics.MetricUpdate,1000)
+
 
 	runtime.GOMAXPROCS(conf.Common.MaxCPU)
 
-	core := cache.New()
+	core := cache.New(idxUptChan)
 	core.SetMaxSize(conf.Cache.MaxSize)
 	core.SetWriteStrategy(conf.Cache.WriteStrategy)
 	core.SetTagsEnabled(conf.Tags.Enabled)
 
 	app.Cache = core
+
+	// fWalk := metrics.NewFileScan(idxUptChan, conf.Carbonserver.ScanFrequency.Value(),conf.Whisper.DataDir)
+	// exitChan,forcescan := make(chan struct{}),make(chan struct{})
+	// go fWalk.RunFileWalk(forcescan,exitChan)
+	// forcescan <- struct{}{}
+	//praneethy: handle exit case
+
 
 	/* API start */
 	if conf.Grpc.Enabled {
@@ -417,7 +429,7 @@ func (app *App) Start() (err error) {
 			return
 		}
 
-		carbonserver := carbonserver.NewCarbonserverListener(core.Get)
+		carbonserver := carbonserver.NewCarbonserverListener(core.Get,idxUptChan)
 		carbonserver.SetWhisperData(conf.Whisper.DataDir)
 		carbonserver.SetMaxGlobs(conf.Carbonserver.MaxGlobs)
 		carbonserver.SetFLock(app.Config.Whisper.FLock)

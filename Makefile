@@ -37,10 +37,18 @@ run-test:
 	$(GO) $(COMMAND) $(MODULE)/receiver/parse
 	$(GO) $(COMMAND) $(MODULE)/receiver/http
 
+temp-test:
+#	$(GO) $(COMMAND) $(MODULE)/cache
+	$(GO) $(COMMAND) $(MODULE)/carbonserver
+#	$(GO) $(COMMAND) $(MODULE)/carbon
+
 test:
-	make run-test COMMAND="test"
-	make run-test COMMAND="vet"
-	# make run-test COMMAND="test -race"
+	make temp-test COMMAND="test -test.v"
+#	make temp-test COMMAND="test -v -tags skipchan"
+#	make temp-test COMMAND="test"
+#	make run-test COMMAND="test"
+	#make run-test COMMAND="vet"
+	#make run-test COMMAND="test -race"
 
 gox-build:
 	rm -rf build

@@ -1,0 +1,273 @@
+make temp-test COMMAND="test -test.v"
+go test -test.v github.com/lomik/go-carbon/carbonserver
+=== RUN   TestExtractTrigrams
+--- PASS: TestExtractTrigrams (0.00s)
+=== RUN   TestFetchSingleMetricNonExisting
+Performing test  non-existing
+in fetchFromDisk; after OpenWithOptions! error is -  open /var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/206604665/non-existing.wsp: no such file or directory
+the data is:  nil
+--- PASS: TestFetchSingleMetricNonExisting (0.00s)
+=== RUN   TestFetchSingleMetricNonProperArchive
+Performing test  no-proper-archive
+the data is:  nil
+--- PASS: TestFetchSingleMetricNonProperArchive (0.00s)
+=== RUN   TestFetchSingleMetricDataCacheOnly
+Performing test  data-cache-only
+in fetchFromDisk; after OpenWithOptions! error is -  open /var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/264215571/data-cache-only.wsp: no such file or directory
+the data is:  nil
+--- FAIL: TestFetchSingleMetricDataCacheOnly (0.00s)
+    carbonserver_test.go:296: Unexpected error: open /var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/264215571/data-cache-only.wsp: no such file or directory
+=== RUN   TestFetchSingleMetricDataFile
+Performing test  data-file
+the data is:  &FetchResponse{Name:data-file,StartTime:1579560120,StopTime:1579560420,StepTime:60,Values:[0.1 0.2 0 0 0],IsAbsent:[false false true true true],}
+&FetchResponse{Name:data-file,StartTime:1579560120,StopTime:1579560420,StepTime:60,Values:[0.1 0.2 0 0 0],IsAbsent:[false false true true true],}
+
+--- PASS: TestFetchSingleMetricDataFile (0.00s)
+=== RUN   TestFetchSingleMetricDataFileCache
+Performing test  data-file-cache
+******=====****** ADD operation in CACHE ;sending this info to channel data-file-cache
+the data is:  &FetchResponse{Name:data-file-cache,StartTime:1579560000,StopTime:1579560420,StepTime:60,Values:[0.1 6.9 0.30000000000000004 7 7.2 7.3 7.4],IsAbsent:[false false false false false false false],}
+&FetchResponse{Name:data-file-cache,StartTime:1579560000,StopTime:1579560420,StepTime:60,Values:[0.1 6.9 0.30000000000000004 7 7.2 7.3 7.4],IsAbsent:[false false false false false false false],}
+
+--- PASS: TestFetchSingleMetricDataFileCache (0.00s)
+=== RUN   TestFetchSingleMetricDataCache
+Performing test  data-cache
+******=====****** ADD operation in CACHE ;sending this info to channel data-cache
+the data is:  &FetchResponse{Name:data-cache,StartTime:1579560000,StopTime:1579560420,StepTime:60,Values:[0 6.9 0 7 7.2 7.3 0],IsAbsent:[true false true false false false true],}
+&FetchResponse{Name:data-cache,StartTime:1579560000,StopTime:1579560420,StepTime:60,Values:[0 6.9 0 7 7.2 7.3 0],IsAbsent:[true false true false false false true],}
+
+--- PASS: TestFetchSingleMetricDataCache (0.00s)
+=== RUN   TestGetMetricsListEmpty
+--- PASS: TestGetMetricsListEmpty (0.00s)
+=== RUN   TestGetMetricsListWithData
+--- PASS: TestGetMetricsListWithData (0.00s)
+=== RUN   TestFetchNewMetricCacheOnly
+******=====****** ADD operation in CACHE ;sending this info to channel newMetrix
+******=====****** ADD operation in CACHE ;sending this info to channel newMetrix1
+******=====****** ADD operation in CACHE ;sending this info to channel newMetrix2
+******=====****** ADD operation in CACHE ;sending this info to channel newMetri3
+******=====****** ADD operation in CACHE ;sending this info to channel newMetrix4
+******=====****** ADD operation in CACHE ;sending this info to channel newMetrix5
+case1: Performing test for new metric
+*************** current index : map[]
+*************** IndexUpdater received ADD operation 
+*************** current index : map[/newMetrix/wsp:{}]
+*************** IndexUpdater received ADD operation 
+*************** current index : map[/newMetrix/wsp:{} /newMetrix1/wsp:{}]
+*************** IndexUpdater received ADD operation 
+*************** current index : map[/newMetrix/wsp:{} /newMetrix1/wsp:{} /newMetrix2/wsp:{}]
+*************** IndexUpdater received ADD operation 
+*************** current index : map[/newMetri3/wsp:{} /newMetrix/wsp:{} /newMetrix1/wsp:{} /newMetrix2/wsp:{}]
+*************** IndexUpdater received ADD operation 
+*************** current index : map[/newMetri3/wsp:{} /newMetrix/wsp:{} /newMetrix1/wsp:{} /newMetrix2/wsp:{} /newMetrix4/wsp:{}]
+*************** IndexUpdater received ADD operation 
+*************** exit case
+--- PASS: TestFetchNewMetricCacheOnly (0.00s)
+=== RUN   TestTrieIndex
+=== RUN   TestTrieIndex/service-00
+trie index took 34.684µs
+trie setTrigrams took 37.079µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-00.server-000.metric-namespace-000.cpu
+trie index took 24.807µs
+trie setTrigrams took 18.495µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-00.server-000.metric-namespace-00[0-2].cpu
+trie index took 28.199µs
+trie setTrigrams took 22.756µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-00.server-00[0-2].metric-namespace-00[0-2].cpu
+trie index took 27.628µs
+trie setTrigrams took 21.944µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-01.server-1[0-2]0.metric-namespace-007.cpu
+trie index took 29.991µs
+trie setTrigrams took 19.217µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-01.server-1[0-5][4-5a-z].metric-namespace-007.cpu
+trie index took 22.581µs
+trie setTrigrams took 23.082µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-01.server-1[1]4.metric-namespace-007.cpu
+trie index took 30.061µs
+trie setTrigrams took 23.541µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-01.server-1[0-2][4-5].metric-namespace-007.cpu
+trie index took 26.695µs
+trie setTrigrams took 19.115µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-01.server-1[0-2][^4-5].metric-namespace-007.cpu
+trie index took 8.334µs
+trie setTrigrams took 11.576µs size 0
+longest metric(53): service-01/something-125/metric-namespace-007/cpu.wsp
+=== RUN   TestTrieIndex/service-01.server-1[0-2][4-5].metric-n[a-z]mesp[a-z1-9]ce-007.cpu
+trie index took 22.644µs
+trie setTrigrams took 25.288µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-00.*.metric-namespace-005.cpu
+trie index took 21.784µs
+trie setTrigrams took 23.519µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/*
+trie index took 27.279µs
+trie setTrigrams took 24.738µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/#00
+trie index took 25.147µs
+trie setTrigrams took 22.6µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/_
+trie index took 25.731µs
+trie setTrigrams took 24.625µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/_#01
+trie index took 25.888µs
+trie setTrigrams took 21.786µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/*.*
+trie index took 28.103µs
+trie setTrigrams took 24.032µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/*.*.*
+trie index took 27.136µs
+trie setTrigrams took 24.184µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-0*.*.metric-namespace-005.cpu
+trie index took 24.019µs
+trie setTrigrams took 19.362µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-0*.*.metric-*-00[5-7].cpu
+trie index took 25.214µs
+trie setTrigrams took 37.255µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-0*.*.metric-*-00[5-7]-xdp.cpu
+trie index took 25.556µs
+trie setTrigrams took 23.739µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-0*.*.{metric-namespace-004-007-xdp,metric-namespace-007-007-xdp}.cpu
+trie index took 29.603µs
+trie setTrigrams took 19.904µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-0*.*.metric-namespace-{{004,007}}{-007}-xdp.cpu
+trie index took 20.686µs
+trie setTrigrams took 36.43µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/service-01.server-170.metric-namespace-004-007-xdp.cp[u
+trie index took 21.929µs
+trie setTrigrams took 17.676µs size 0
+longest metric(63): service-00/server-000/metric-namespace-000/43081e003a315b88.wsp
+=== RUN   TestTrieIndex/services.groups.*.*.nginx.type.*.{{frontend,backend},os}.random-404_xoxo.http*
+trie index took 8.061µs
+trie setTrigrams took 14.243µs size 0
+longest metric(83): services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp
+=== RUN   TestTrieIndex/services.groups.*.*.nginx.type.*.frontend.random-404_xoxo.http*
+trie index took 7.788µs
+trie setTrigrams took 7.665µs size 0
+longest metric(83): services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp
+=== RUN   TestTrieIndex/services.groups.*.*.nginx.type.*.frontend.{random-404_xoxo,random.404.xoxo}.http*
+trie index took 6.467µs
+trie setTrigrams took 6.689µs size 0
+longest metric(83): services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp
+=== RUN   TestTrieIndex/services.groups.*.*.nginx.type.*.frontend.{random-40?_xoxo,random.40?.xoxo}.http*
+trie index took 14.909µs
+trie setTrigrams took 9.729µs size 0
+longest metric(83): services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp
+=== RUN   TestTrieIndex/services.groups.*.*.nginx.type.*.frontend.{random-40?_xoxo,random.40?.xoxo}.http_[^5]*
+trie index took 9.843µs
+trie setTrigrams took 10.918µs size 0
+longest metric(83): services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp
+=== RUN   TestTrieIndex/services.groups.*.*.nginx.type.*.frontend.*404_xoxo.http*
+trie index took 11.878µs
+trie setTrigrams took 23.33µs size 0
+longest metric(83): services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp
+=== RUN   TestTrieIndex/fe.series.*.*.haproxy.host.*cjk-*_internet_com.traffic
+trie index took 5.24µs
+trie setTrigrams took 6.167µs size 0
+longest metric(74): fe/series/abc_101/xyz/haproxy/host/cjk-1018_main7_internet_com/traffic.wsp
+=== RUN   TestTrieIndex/fe.series.*.*...haproxy.host.*cjk-*_internet_com.traffic
+trie index took 7.104µs
+trie setTrigrams took 6.334µs size 0
+longest metric(74): fe/series/abc_101/xyz/haproxy/host/cjk-1018_main7_internet_com/traffic.wsp
+=== RUN   TestTrieIndex/fe.series.*.*.haproxy.host.*cjk-*_internet_com.traffic.
+trie index took 4.493µs
+trie setTrigrams took 4.597µs size 0
+longest metric(74): fe/series/abc_101/xyz/haproxy/host/cjk-1018_main7_internet_com/traffic.wsp
+=== RUN   TestTrieIndex/...fe.series.*.*.haproxy.host.*cjk-*_internet_com.traffic
+trie index took 4.748µs
+trie setTrigrams took 7.313µs size 0
+longest metric(74): fe/series/abc_101/xyz/haproxy/host/cjk-1018_main7_internet_com/traffic.wsp
+--- PASS: TestTrieIndex (0.00s)
+    --- PASS: TestTrieIndex/service-00 (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-00$'
+    --- PASS: TestTrieIndex/service-00.server-000.metric-namespace-000.cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-00\.server-000\.metric-namespace-000\.cpu$'
+    --- PASS: TestTrieIndex/service-00.server-000.metric-namespace-00[0-2].cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-00\.server-000\.metric-namespace-00\[0-2\]\.cpu$'
+    --- PASS: TestTrieIndex/service-00.server-00[0-2].metric-namespace-00[0-2].cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-00\.server-00\[0-2\]\.metric-namespace-00\[0-2\]\.cpu$'
+    --- PASS: TestTrieIndex/service-01.server-1[0-2]0.metric-namespace-007.cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-01\.server-1\[0-2\]0\.metric-namespace-007\.cpu$'
+    --- PASS: TestTrieIndex/service-01.server-1[0-5][4-5a-z].metric-namespace-007.cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-01\.server-1\[0-5\]\[4-5a-z\]\.metric-namespace-007\.cpu$'
+    --- PASS: TestTrieIndex/service-01.server-1[1]4.metric-namespace-007.cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-01\.server-1\[1\]4\.metric-namespace-007\.cpu$'
+    --- PASS: TestTrieIndex/service-01.server-1[0-2][4-5].metric-namespace-007.cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-01\.server-1\[0-2\]\[4-5\]\.metric-namespace-007\.cpu$'
+    --- PASS: TestTrieIndex/service-01.server-1[0-2][^4-5].metric-namespace-007.cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-01\.server-1\[0-2\]\[\^4-5\]\.metric-namespace-007\.cpu$'
+    --- PASS: TestTrieIndex/service-01.server-1[0-2][4-5].metric-n[a-z]mesp[a-z1-9]ce-007.cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-01\.server-1\[0-2\]\[4-5\]\.metric-n\[a-z\]mesp\[a-z1-9\]ce-007\.cpu$'
+    --- PASS: TestTrieIndex/service-00.*.metric-namespace-005.cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-00\.\*\.metric-namespace-005\.cpu$'
+    --- PASS: TestTrieIndex/* (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^\*$'
+    --- PASS: TestTrieIndex/#00 (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^$'
+    --- PASS: TestTrieIndex/_ (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^	$'
+    --- PASS: TestTrieIndex/_#01 (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^ $'
+    --- PASS: TestTrieIndex/*.* (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^\*\.\*$'
+    --- PASS: TestTrieIndex/*.*.* (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^\*\.\*\.\*$'
+    --- PASS: TestTrieIndex/service-0*.*.metric-namespace-005.cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-0\*\.\*\.metric-namespace-005\.cpu$'
+    --- PASS: TestTrieIndex/service-0*.*.metric-*-00[5-7].cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-0\*\.\*\.metric-\*-00\[5-7\]\.cpu$'
+    --- PASS: TestTrieIndex/service-0*.*.metric-*-00[5-7]-xdp.cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-0\*\.\*\.metric-\*-00\[5-7\]-xdp\.cpu$'
+    --- PASS: TestTrieIndex/service-0*.*.{metric-namespace-004-007-xdp,metric-namespace-007-007-xdp}.cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-0\*\.\*\.\{metric-namespace-004-007-xdp,metric-namespace-007-007-xdp\}\.cpu$'
+    --- PASS: TestTrieIndex/service-0*.*.metric-namespace-{{004,007}}{-007}-xdp.cpu (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-0\*\.\*\.metric-namespace-\{\{004,007\}\}\{-007\}-xdp\.cpu$'
+    --- PASS: TestTrieIndex/service-01.server-170.metric-namespace-004-007-xdp.cp[u (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^service-01\.server-170\.metric-namespace-004-007-xdp\.cp\[u$'
+    --- PASS: TestTrieIndex/services.groups.*.*.nginx.type.*.{{frontend,backend},os}.random-404_xoxo.http* (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^services\.groups\.\*\.\*\.nginx\.type\.\*\.\{\{frontend,backend\},os\}\.random-404_xoxo\.http\*$'
+    --- PASS: TestTrieIndex/services.groups.*.*.nginx.type.*.frontend.random-404_xoxo.http* (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^services\.groups\.\*\.\*\.nginx\.type\.\*\.frontend\.random-404_xoxo\.http\*$'
+    --- PASS: TestTrieIndex/services.groups.*.*.nginx.type.*.frontend.{random-404_xoxo,random.404.xoxo}.http* (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^services\.groups\.\*\.\*\.nginx\.type\.\*\.frontend\.\{random-404_xoxo,random\.404\.xoxo\}\.http\*$'
+    --- PASS: TestTrieIndex/services.groups.*.*.nginx.type.*.frontend.{random-40?_xoxo,random.40?.xoxo}.http* (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^services\.groups\.\*\.\*\.nginx\.type\.\*\.frontend\.\{random-40\?_xoxo,random\.40\?\.xoxo\}\.http\*$'
+    --- PASS: TestTrieIndex/services.groups.*.*.nginx.type.*.frontend.{random-40?_xoxo,random.40?.xoxo}.http_[^5]* (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^services\.groups\.\*\.\*\.nginx\.type\.\*\.frontend\.\{random-40\?_xoxo,random\.40\?\.xoxo\}\.http_\[\^5\]\*$'
+    --- PASS: TestTrieIndex/services.groups.*.*.nginx.type.*.frontend.*404_xoxo.http* (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^services\.groups\.\*\.\*\.nginx\.type\.\*\.frontend\.\*404_xoxo\.http\*$'
+    --- PASS: TestTrieIndex/fe.series.*.*.haproxy.host.*cjk-*_internet_com.traffic (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^fe\.series\.\*\.\*\.haproxy\.host\.\*cjk-\*_internet_com\.traffic$'
+    --- PASS: TestTrieIndex/fe.series.*.*...haproxy.host.*cjk-*_internet_com.traffic (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^fe\.series\.\*\.\*\.\.\.haproxy\.host\.\*cjk-\*_internet_com\.traffic$'
+    --- PASS: TestTrieIndex/fe.series.*.*.haproxy.host.*cjk-*_internet_com.traffic. (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^fe\.series\.\*\.\*\.haproxy\.host\.\*cjk-\*_internet_com\.traffic\.$'
+    --- PASS: TestTrieIndex/...fe.series.*.*.haproxy.host.*cjk-*_internet_com.traffic (0.00s)
+        trie_test.go:614: case: TestTrieIndex/'^\.\.\.fe\.series\.\*\.\*\.haproxy\.host\.\*cjk-\*_internet_com\.traffic$'
+=== RUN   TestDumpAllMetrics
+trie index took 29.526µs
+trie setTrigrams took 37.688µs size 0
+longest metric(85): services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_koko_abc/xoxo/udp.wsp
+--- PASS: TestDumpAllMetrics (0.00s)
+FAIL
+FAIL	github.com/lomik/go-carbon/carbonserver	0.025s
+FAIL

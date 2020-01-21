@@ -34,7 +34,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
+	// "syscall"
 	"time"
 
 	prom "github.com/prometheus/client_golang/prometheus"
@@ -46,7 +46,8 @@ import (
 	"github.com/dgryski/httputil"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/go-carbon/helper"
-	"github.com/lomik/go-carbon/helper/stat"
+	// "github.com/lomik/go-carbon/helper/stat"
+	"github.com/lomik/go-carbon/helper/metrics"
 	"github.com/lomik/go-carbon/points"
 	"github.com/lomik/zapwriter"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -274,6 +275,10 @@ type CarbonserverListener struct {
 
 	prometheus prometheus
 
+	// indexUpdater *indexInfo
+	// indexUpdateChan chan MetricUpdate
+	indexUpdateChan chan metrics.MetricUpdate
+
 	db *leveldb.DB
 }
 
@@ -428,31 +433,13 @@ type jsonMetricDetailsResponse struct {
 	TotalSpace uint64
 }
 
-const (
-	indexTypeTrigram = iota
-	indexTypeTrie
-)
-
-type fileIndex struct {
-	typ int
-
-	idx   trigram.Index
-	files []string
-
-	trieIdx *trieIndex
-
-	details     map[string]*protov3.MetricDetails
-	accessTimes map[string]int64
-	freeSpace   uint64
-	totalSpace  uint64
-}
-
-func NewCarbonserverListener(cacheGetFunc func(key string) []points.Point) *CarbonserverListener {
+func NewCarbonserverListener(cacheGetFunc func(key string) []points.Point,idxUptChan chan metrics.MetricUpdate) *CarbonserverListener {
 	return &CarbonserverListener{
 		// Config variables
 		metrics:           &metricStruct{},
 		metricsAsCounters: false,
 		cacheGet:          cacheGetFunc,
+		indexUpdateChan:	 idxUptChan,
 		logger:            zapwriter.Logger("carbonserver"),
 		accessLogger:      zapwriter.Logger("access"),
 		findCache:         queryCache{ec: expirecache.New(0)},
@@ -544,8 +531,6 @@ func (listener *CarbonserverListener) CurrentFileIndex() *fileIndex {
 	return p.(*fileIndex)
 }
 
-func (listener *CarbonserverListener) UpdateFileIndex(fidx *fileIndex) { listener.fileIdx.Store(fidx) }
-
 func (listener *CarbonserverListener) UpdateMetricsAccessTimes(metrics map[string]int64, initial bool) {
 	idx := listener.CurrentFileIndex()
 	if idx == nil {
@@ -589,164 +574,6 @@ func (listener *CarbonserverListener) UpdateMetricsAccessTimesByRequest(metrics 
 	}
 
 	listener.UpdateMetricsAccessTimes(accessTimes, false)
-}
-
-func (listener *CarbonserverListener) fileListUpdater(dir string, tick <-chan time.Time, force <-chan struct{}, exit <-chan struct{}) {
-	for {
-		select {
-		case <-exit:
-			return
-		case <-tick:
-		case <-force:
-		}
-		listener.updateFileList(dir)
-	}
-}
-
-func (listener *CarbonserverListener) updateFileList(dir string) {
-	logger := listener.logger.With(zap.String("handler", "fileListUpdated"))
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Error("panic encountered",
-				zap.Stack("stack"),
-				zap.Any("error", r),
-			)
-		}
-	}()
-	t0 := time.Now()
-
-	var files []string
-	details := make(map[string]*protov3.MetricDetails)
-
-	metricsKnown := uint64(0)
-	err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-		if err != nil {
-			logger.Info("error processing", zap.String("path", p), zap.Error(err))
-			return nil
-		}
-
-		hasSuffix := strings.HasSuffix(info.Name(), ".wsp")
-		if info.IsDir() || hasSuffix {
-			trimmedName := strings.TrimPrefix(p, listener.whisperData)
-			files = append(files, trimmedName)
-			if hasSuffix {
-				metricsKnown++
-				if listener.internalStatsDir != "" {
-					i := stat.GetStat(info)
-					trimmedName = strings.Replace(trimmedName[1:len(trimmedName)-4], "/", ".", -1)
-					details[trimmedName] = &protov3.MetricDetails{
-						Size_:    i.Size,
-						ModTime:  i.MTime,
-						ATime:    i.ATime,
-						RealSize: i.RealSize,
-					}
-				}
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		logger.Error("error getting file list",
-			zap.Error(err),
-		)
-	}
-
-	var stat syscall.Statfs_t
-	err = syscall.Statfs(dir, &stat)
-	if err != nil {
-		logger.Info("error getting FS Stats",
-			zap.String("dir", dir),
-			zap.Error(err),
-		)
-		return
-	}
-
-	var freeSpace uint64
-	if stat.Bavail >= 0 {
-		freeSpace = uint64(stat.Bavail) * uint64(stat.Bsize)
-	}
-	totalSpace := stat.Blocks * uint64(stat.Bsize)
-
-	fileScanRuntime := time.Since(t0)
-	atomic.StoreUint64(&listener.metrics.MetricsKnown, metricsKnown)
-	atomic.AddUint64(&listener.metrics.FileScanTimeNS, uint64(fileScanRuntime.Nanoseconds()))
-
-	nfidx := &fileIndex{
-		details:     details,
-		freeSpace:   freeSpace,
-		totalSpace:  totalSpace,
-		accessTimes: make(map[string]int64),
-	}
-
-	var pruned int
-	var indexType = "trigram"
-	var infos []zap.Field
-	t0 = time.Now()
-	if listener.trieIndex {
-		indexType = "trie"
-		nfidx.trieIdx = newTrie(".wsp")
-		var errs []error
-		for _, file := range files {
-			if err := nfidx.trieIdx.insert(file); err != nil {
-				errs = append(errs, err)
-			}
-		}
-		infos = append(
-			infos,
-			zap.Int("trie_depth", nfidx.trieIdx.depth),
-			zap.String("longest_metric", nfidx.trieIdx.longestMetric),
-		)
-		if len(errs) > 0 {
-			infos = append(infos, zap.Errors("trie_index_errors", errs))
-		}
-		if listener.trigramIndex {
-			start := time.Now()
-			nfidx.trieIdx.setTrigrams()
-			infos = append(infos, zap.Duration("set_trigram_time", time.Now().Sub(start)))
-		}
-	} else {
-		nfidx.files = files
-		nfidx.idx = trigram.NewIndex(files)
-		pruned = nfidx.idx.Prune(0.95)
-	}
-	indexSize := len(nfidx.idx)
-	indexingRuntime := time.Since(t0)
-	atomic.AddUint64(&listener.metrics.IndexBuildTimeNS, uint64(indexingRuntime.Nanoseconds()))
-
-	tl := time.Now()
-	fidx := listener.CurrentFileIndex()
-
-	if fidx != nil && listener.internalStatsDir != "" {
-		listener.fileIdxMutex.Lock()
-		for m := range fidx.accessTimes {
-			if d, ok := details[m]; ok {
-				d.RdTime = fidx.accessTimes[m]
-			} else {
-				delete(fidx.accessTimes, m)
-				if listener.db != nil {
-					listener.db.Delete([]byte(m), nil)
-				}
-			}
-		}
-		nfidx.accessTimes = fidx.accessTimes
-		listener.fileIdxMutex.Unlock()
-	}
-	rdTimeUpdateRuntime := time.Since(tl)
-
-	listener.UpdateFileIndex(nfidx)
-
-	infos = append(infos,
-		zap.Duration("file_scan_runtime", fileScanRuntime),
-		zap.Duration("indexing_runtime", indexingRuntime),
-		zap.Duration("rdtime_update_runtime", rdTimeUpdateRuntime),
-		zap.Duration("total_runtime", time.Since(t0)),
-		zap.Int("Files", len(files)),
-		zap.Int("index_size", indexSize),
-		zap.Int("pruned_trigrams", pruned),
-		zap.String("index_type", indexType),
-	)
-	logger.Info("file list updated", infos...)
 }
 
 func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query string, resultCh chan<- *ExpandedGlobResponse) {
@@ -1093,10 +920,15 @@ func (listener *CarbonserverListener) Listen(listen string) error {
 		zap.String("scanFrequency", listener.scanFrequency.String()),
 	)
 
+	// listener.indexUpdater = NewIndexUpdater(listener)
+	idxUpdater := listener.indexUpdater()
 	listener.exitChan = make(chan struct{})
 	if (listener.trigramIndex || listener.trieIndex) && listener.scanFrequency != 0 {
 		listener.forceScanChan = make(chan struct{})
-		go listener.fileListUpdater(listener.whisperData, time.Tick(listener.scanFrequency), listener.forceScanChan, listener.exitChan)
+		// go listener.fileListUpdater(listener.whisperData, time.Tick(listener.scanFrequency), listener.forceScanChan, listener.exitChan)
+		// go listener.indexUpdater.fileListUpdater()
+		// go idxUpdater.fileListUpdater()
+		go idxUpdater.updateIndex()
 		listener.forceScanChan <- struct{}{}
 	}
 

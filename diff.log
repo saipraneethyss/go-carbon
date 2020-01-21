@@ -1,0 +1,599 @@
+diff --git a/Makefile b/Makefile
+index ff692ca..f0f25c4 100644
+--- a/Makefile
++++ b/Makefile
+@@ -37,10 +37,18 @@ run-test:
+ 	$(GO) $(COMMAND) $(MODULE)/receiver/parse
+ 	$(GO) $(COMMAND) $(MODULE)/receiver/http
+ 
++temp-test:
++#	$(GO) $(COMMAND) $(MODULE)/cache
++	$(GO) $(COMMAND) $(MODULE)/carbonserver
++#	$(GO) $(COMMAND) $(MODULE)/carbon
++
+ test:
+-	make run-test COMMAND="test"
+-	make run-test COMMAND="vet"
+-	# make run-test COMMAND="test -race"
++	#make temp-test COMMAND="test -test.v -tags idchan"
++	make temp-test COMMAND="test -v -tags skipchan"
++#	make temp-test COMMAND="test"
++#	make run-test COMMAND="test"
++	#make run-test COMMAND="vet"
++	#make run-test COMMAND="test -race"
+ 
+ gox-build:
+ 	rm -rf build
+diff --git a/cache/cache.go b/cache/cache.go
+index 12c9a9a..5cb21aa 100644
+--- a/cache/cache.go
++++ b/cache/cache.go
+@@ -10,10 +10,13 @@ import (
+ 	"sync"
+ 	"sync/atomic"
+ 	"time"
++	"strings"
+ 
+ 	"github.com/lomik/go-carbon/helper"
++	"github.com/lomik/go-carbon/helper/metrics"
+ 	"github.com/lomik/go-carbon/points"
+ 	"github.com/lomik/go-carbon/tags"
++	// "github.com/lomik/go-carbon/carbonserver"
+ )
+ 
+ type WriteStrategy int
+@@ -44,6 +47,9 @@ type Cache struct {
+ 	writeStrategy WriteStrategy
+ 	writeoutQueue *WriteoutQueue
+ 
++	// idxUpdateChan chan carbonserver.MetricUpdate
++	idxUpdateChan chan metrics.MetricUpdate
++
+ 	settings atomic.Value // cacheSettings
+ 
+ 	stat struct {
+@@ -66,10 +72,11 @@ type Shard struct {
+ }
+ 
+ // Creates a new cache instance
+-func New() *Cache {
++func New(idxUptChan chan metrics.MetricUpdate) *Cache {
+ 	c := &Cache{
+ 		data:          make([]*Shard, shardCount),
+ 		writeStrategy: Noop,
++		idxUpdateChan: idxUptChan,
+ 	}
+ 
+ 	for i := 0; i < shardCount; i++ {
+@@ -230,6 +237,11 @@ func (c *Cache) DivertToXlog(w io.Writer) {
+ 	c.settings.Store(&newSettings)
+ }
+ 
++func cnvToWhispFormat(newMetric string) string {
++	m := "/"+newMetric+".wsp"
++	return strings.Replace(m,".","/",-1)
++}
++
+ // Sets the given value under the specified key.
+ func (c *Cache) Add(p *points.Points) {
+ 	s := c.settings.Load().(*cacheSettings)
+@@ -263,6 +275,11 @@ func (c *Cache) Add(p *points.Points) {
+ 		values.Data = append(values.Data, p.Data...)
+ 	} else {
+ 		shard.items[p.Metric] = p
++		fmt.Println("******=====****** ADD operation in CACHE ;sending this info to channel", p.Metric)
++		c.idxUpdateChan <- metrics.MetricUpdate{
++			Name: cnvToWhispFormat(p.Metric),
++			Operation: metrics.ADD,
++		}
+ 	}
+ 	shard.Unlock()
+ 
+diff --git a/carbon/app.go b/carbon/app.go
+index 1dc886d..cd4febf 100644
+--- a/carbon/app.go
++++ b/carbon/app.go
+@@ -19,6 +19,7 @@ import (
+ 	"github.com/lomik/go-carbon/receiver"
+ 	"github.com/lomik/go-carbon/tags"
+ 	"github.com/lomik/zapwriter"
++	"github.com/lomik/go-carbon/helper/metrics"
+ 
+ 	// register receivers
+ 	_ "github.com/lomik/go-carbon/receiver/http"
+@@ -47,6 +48,7 @@ type App struct {
+ 	Collector      *Collector // (!!!) Should be re-created on every change config/modules
+ 	PromRegisterer prometheus.Registerer
+ 	PromRegistry   *prometheus.Registry
++	// FileScan			 *fileScan
+ 	exit           chan bool
+ }
+ 
+@@ -307,16 +309,26 @@ func (app *App) Start() (err error) {
+ 	}()
+ 
+ 	conf := app.Config
++	// idxUptChan := make(chan carbonserver.MetricUpdate,1000)
++	idxUptChan := make(chan metrics.MetricUpdate,1000)
++
+ 
+ 	runtime.GOMAXPROCS(conf.Common.MaxCPU)
+ 
+-	core := cache.New()
++	core := cache.New(idxUptChan)
+ 	core.SetMaxSize(conf.Cache.MaxSize)
+ 	core.SetWriteStrategy(conf.Cache.WriteStrategy)
+ 	core.SetTagsEnabled(conf.Tags.Enabled)
+ 
+ 	app.Cache = core
+ 
++	// fWalk := metrics.NewFileScan(idxUptChan, conf.Carbonserver.ScanFrequency.Value(),conf.Whisper.DataDir)
++	// exitChan,forcescan := make(chan struct{}),make(chan struct{})
++	// go fWalk.RunFileWalk(forcescan,exitChan)
++	// forcescan <- struct{}{}
++	//praneethy: handle exit case
++
++
+ 	/* API start */
+ 	if conf.Grpc.Enabled {
+ 		var grpcAddr *net.TCPAddr
+@@ -417,7 +429,7 @@ func (app *App) Start() (err error) {
+ 			return
+ 		}
+ 
+-		carbonserver := carbonserver.NewCarbonserverListener(core.Get)
++		carbonserver := carbonserver.NewCarbonserverListener(core.Get,idxUptChan)
+ 		carbonserver.SetWhisperData(conf.Whisper.DataDir)
+ 		carbonserver.SetMaxGlobs(conf.Carbonserver.MaxGlobs)
+ 		carbonserver.SetFLock(app.Config.Whisper.FLock)
+diff --git a/carbonserver/carbonserver.go b/carbonserver/carbonserver.go
+index bd444be..e8ffda9 100644
+--- a/carbonserver/carbonserver.go
++++ b/carbonserver/carbonserver.go
+@@ -34,7 +34,7 @@ import (
+ 	"strings"
+ 	"sync"
+ 	"sync/atomic"
+-	"syscall"
++	// "syscall"
+ 	"time"
+ 
+ 	prom "github.com/prometheus/client_golang/prometheus"
+@@ -46,7 +46,8 @@ import (
+ 	"github.com/dgryski/httputil"
+ 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
+ 	"github.com/lomik/go-carbon/helper"
+-	"github.com/lomik/go-carbon/helper/stat"
++	// "github.com/lomik/go-carbon/helper/stat"
++	"github.com/lomik/go-carbon/helper/metrics"
+ 	"github.com/lomik/go-carbon/points"
+ 	"github.com/lomik/zapwriter"
+ 	"github.com/syndtr/goleveldb/leveldb"
+@@ -274,6 +275,10 @@ type CarbonserverListener struct {
+ 
+ 	prometheus prometheus
+ 
++	// indexUpdater *indexInfo
++	// indexUpdateChan chan MetricUpdate
++	indexUpdateChan chan metrics.MetricUpdate
++
+ 	db *leveldb.DB
+ }
+ 
+@@ -428,31 +433,13 @@ type jsonMetricDetailsResponse struct {
+ 	TotalSpace uint64
+ }
+ 
+-const (
+-	indexTypeTrigram = iota
+-	indexTypeTrie
+-)
+-
+-type fileIndex struct {
+-	typ int
+-
+-	idx   trigram.Index
+-	files []string
+-
+-	trieIdx *trieIndex
+-
+-	details     map[string]*protov3.MetricDetails
+-	accessTimes map[string]int64
+-	freeSpace   uint64
+-	totalSpace  uint64
+-}
+-
+-func NewCarbonserverListener(cacheGetFunc func(key string) []points.Point) *CarbonserverListener {
++func NewCarbonserverListener(cacheGetFunc func(key string) []points.Point,idxUptChan chan metrics.MetricUpdate) *CarbonserverListener {
+ 	return &CarbonserverListener{
+ 		// Config variables
+ 		metrics:           &metricStruct{},
+ 		metricsAsCounters: false,
+ 		cacheGet:          cacheGetFunc,
++		indexUpdateChan:	 idxUptChan,
+ 		logger:            zapwriter.Logger("carbonserver"),
+ 		accessLogger:      zapwriter.Logger("access"),
+ 		findCache:         queryCache{ec: expirecache.New(0)},
+@@ -544,8 +531,6 @@ func (listener *CarbonserverListener) CurrentFileIndex() *fileIndex {
+ 	return p.(*fileIndex)
+ }
+ 
+-func (listener *CarbonserverListener) UpdateFileIndex(fidx *fileIndex) { listener.fileIdx.Store(fidx) }
+-
+ func (listener *CarbonserverListener) UpdateMetricsAccessTimes(metrics map[string]int64, initial bool) {
+ 	idx := listener.CurrentFileIndex()
+ 	if idx == nil {
+@@ -591,164 +576,6 @@ func (listener *CarbonserverListener) UpdateMetricsAccessTimesByRequest(metrics
+ 	listener.UpdateMetricsAccessTimes(accessTimes, false)
+ }
+ 
+-func (listener *CarbonserverListener) fileListUpdater(dir string, tick <-chan time.Time, force <-chan struct{}, exit <-chan struct{}) {
+-	for {
+-		select {
+-		case <-exit:
+-			return
+-		case <-tick:
+-		case <-force:
+-		}
+-		listener.updateFileList(dir)
+-	}
+-}
+-
+-func (listener *CarbonserverListener) updateFileList(dir string) {
+-	logger := listener.logger.With(zap.String("handler", "fileListUpdated"))
+-	defer func() {
+-		if r := recover(); r != nil {
+-			logger.Error("panic encountered",
+-				zap.Stack("stack"),
+-				zap.Any("error", r),
+-			)
+-		}
+-	}()
+-	t0 := time.Now()
+-
+-	var files []string
+-	details := make(map[string]*protov3.MetricDetails)
+-
+-	metricsKnown := uint64(0)
+-	err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+-		if err != nil {
+-			logger.Info("error processing", zap.String("path", p), zap.Error(err))
+-			return nil
+-		}
+-
+-		hasSuffix := strings.HasSuffix(info.Name(), ".wsp")
+-		if info.IsDir() || hasSuffix {
+-			trimmedName := strings.TrimPrefix(p, listener.whisperData)
+-			files = append(files, trimmedName)
+-			if hasSuffix {
+-				metricsKnown++
+-				if listener.internalStatsDir != "" {
+-					i := stat.GetStat(info)
+-					trimmedName = strings.Replace(trimmedName[1:len(trimmedName)-4], "/", ".", -1)
+-					details[trimmedName] = &protov3.MetricDetails{
+-						Size_:    i.Size,
+-						ModTime:  i.MTime,
+-						ATime:    i.ATime,
+-						RealSize: i.RealSize,
+-					}
+-				}
+-			}
+-		}
+-
+-		return nil
+-	})
+-	if err != nil {
+-		logger.Error("error getting file list",
+-			zap.Error(err),
+-		)
+-	}
+-
+-	var stat syscall.Statfs_t
+-	err = syscall.Statfs(dir, &stat)
+-	if err != nil {
+-		logger.Info("error getting FS Stats",
+-			zap.String("dir", dir),
+-			zap.Error(err),
+-		)
+-		return
+-	}
+-
+-	var freeSpace uint64
+-	if stat.Bavail >= 0 {
+-		freeSpace = uint64(stat.Bavail) * uint64(stat.Bsize)
+-	}
+-	totalSpace := stat.Blocks * uint64(stat.Bsize)
+-
+-	fileScanRuntime := time.Since(t0)
+-	atomic.StoreUint64(&listener.metrics.MetricsKnown, metricsKnown)
+-	atomic.AddUint64(&listener.metrics.FileScanTimeNS, uint64(fileScanRuntime.Nanoseconds()))
+-
+-	nfidx := &fileIndex{
+-		details:     details,
+-		freeSpace:   freeSpace,
+-		totalSpace:  totalSpace,
+-		accessTimes: make(map[string]int64),
+-	}
+-
+-	var pruned int
+-	var indexType = "trigram"
+-	var infos []zap.Field
+-	t0 = time.Now()
+-	if listener.trieIndex {
+-		indexType = "trie"
+-		nfidx.trieIdx = newTrie(".wsp")
+-		var errs []error
+-		for _, file := range files {
+-			if err := nfidx.trieIdx.insert(file); err != nil {
+-				errs = append(errs, err)
+-			}
+-		}
+-		infos = append(
+-			infos,
+-			zap.Int("trie_depth", nfidx.trieIdx.depth),
+-			zap.String("longest_metric", nfidx.trieIdx.longestMetric),
+-		)
+-		if len(errs) > 0 {
+-			infos = append(infos, zap.Errors("trie_index_errors", errs))
+-		}
+-		if listener.trigramIndex {
+-			start := time.Now()
+-			nfidx.trieIdx.setTrigrams()
+-			infos = append(infos, zap.Duration("set_trigram_time", time.Now().Sub(start)))
+-		}
+-	} else {
+-		nfidx.files = files
+-		nfidx.idx = trigram.NewIndex(files)
+-		pruned = nfidx.idx.Prune(0.95)
+-	}
+-	indexSize := len(nfidx.idx)
+-	indexingRuntime := time.Since(t0)
+-	atomic.AddUint64(&listener.metrics.IndexBuildTimeNS, uint64(indexingRuntime.Nanoseconds()))
+-
+-	tl := time.Now()
+-	fidx := listener.CurrentFileIndex()
+-
+-	if fidx != nil && listener.internalStatsDir != "" {
+-		listener.fileIdxMutex.Lock()
+-		for m := range fidx.accessTimes {
+-			if d, ok := details[m]; ok {
+-				d.RdTime = fidx.accessTimes[m]
+-			} else {
+-				delete(fidx.accessTimes, m)
+-				if listener.db != nil {
+-					listener.db.Delete([]byte(m), nil)
+-				}
+-			}
+-		}
+-		nfidx.accessTimes = fidx.accessTimes
+-		listener.fileIdxMutex.Unlock()
+-	}
+-	rdTimeUpdateRuntime := time.Since(tl)
+-
+-	listener.UpdateFileIndex(nfidx)
+-
+-	infos = append(infos,
+-		zap.Duration("file_scan_runtime", fileScanRuntime),
+-		zap.Duration("indexing_runtime", indexingRuntime),
+-		zap.Duration("rdtime_update_runtime", rdTimeUpdateRuntime),
+-		zap.Duration("total_runtime", time.Since(t0)),
+-		zap.Int("Files", len(files)),
+-		zap.Int("index_size", indexSize),
+-		zap.Int("pruned_trigrams", pruned),
+-		zap.String("index_type", indexType),
+-	)
+-	logger.Info("file list updated", infos...)
+-}
+-
+ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query string, resultCh chan<- *ExpandedGlobResponse) {
+ 	defer func() {
+ 		if err := recover(); err != nil {
+@@ -1093,10 +920,15 @@ func (listener *CarbonserverListener) Listen(listen string) error {
+ 		zap.String("scanFrequency", listener.scanFrequency.String()),
+ 	)
+ 
++	// listener.indexUpdater = NewIndexUpdater(listener)
++	idxUpdater := listener.indexUpdater()
+ 	listener.exitChan = make(chan struct{})
+ 	if (listener.trigramIndex || listener.trieIndex) && listener.scanFrequency != 0 {
+ 		listener.forceScanChan = make(chan struct{})
+-		go listener.fileListUpdater(listener.whisperData, time.Tick(listener.scanFrequency), listener.forceScanChan, listener.exitChan)
++		// go listener.fileListUpdater(listener.whisperData, time.Tick(listener.scanFrequency), listener.forceScanChan, listener.exitChan)
++		// go listener.indexUpdater.fileListUpdater()
++		// go idxUpdater.fileListUpdater()
++		go idxUpdater.updateIndex()
+ 		listener.forceScanChan <- struct{}{}
+ 	}
+ 
+diff --git a/carbonserver/carbonserver_test.go b/carbonserver/carbonserver_test.go
+index 794b2a2..3793653 100644
+--- a/carbonserver/carbonserver_test.go
++++ b/carbonserver/carbonserver_test.go
+@@ -1,3 +1,5 @@
++// +build !skipchan
++
+ package carbonserver
+ 
+ import (
+@@ -14,6 +16,7 @@ import (
+ 	"github.com/dgryski/go-trigram"
+ 	"github.com/go-graphite/go-whisper"
+ 	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
++	"github.com/lomik/go-carbon/helper/metrics"
+ 	"github.com/lomik/go-carbon/cache"
+ 	"github.com/lomik/go-carbon/points"
+ 	"go.uber.org/zap"
+@@ -124,6 +127,7 @@ func testFetchSingleMetricHelper(testData *FetchTest, cache *cache.Cache, carbon
+ 	}
+ 	defer generalFetchSingleMetricRemove(testData)
+ 	data, err := generalFetchSingleMetricHelper(testData, cache, carbonserver)
++	fmt.Fprintln(os.Stderr,"the data is: ",data)
+ 	return data, err
+ }
+ 
+@@ -249,14 +253,15 @@ func getSingleMetricTest(name string) *FetchTest {
+ }
+ 
+ func testFetchSingleMetricCommon(t *testing.T, test *FetchTest) {
+-	cache := cache.New()
++	idxChan := make(chan metrics.MetricUpdate,4)
++	cache := cache.New(idxChan)
+ 	path, err := ioutil.TempDir("", "")
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
+ 	defer os.RemoveAll(path)
+ 
+-	carbonserver := NewCarbonserverListener(cache.Get)
++	carbonserver := NewCarbonserverListener(cache.Get,idxChan)
+ 	carbonserver.whisperData = path
+ 	carbonserver.logger = zap.NewNop()
+ 	carbonserver.metrics = &metricStruct{}
+@@ -347,7 +352,8 @@ func TestFetchSingleMetricDataCache(t *testing.T) {
+ }
+ 
+ func TestGetMetricsListEmpty(t *testing.T) {
+-	cache := cache.New()
++	tempChan := make(chan metrics.MetricUpdate,4)
++	cache := cache.New(tempChan)
+ 	path, err := ioutil.TempDir("", "")
+ 	if err != nil {
+ 		t.Fatal(err)
+@@ -367,10 +373,12 @@ func TestGetMetricsListEmpty(t *testing.T) {
+ 	if metrics != nil {
+ 		t.Errorf("metrics: '%v', expected: 'nil'", err)
+ 	}
++	close(tempChan)
+ }
+ 
+ func TestGetMetricsListWithData(t *testing.T) {
+-	cache := cache.New()
++	tempChan := make(chan metrics.MetricUpdate,4)
++	cache := cache.New(tempChan)
+ 	path, err := ioutil.TempDir("", "")
+ 	if err != nil {
+ 		t.Fatal(err)
+@@ -386,7 +394,7 @@ func TestGetMetricsListWithData(t *testing.T) {
+ 	fidx := fileIndex{}
+ 	fidx.files = append(fidx.files, "/foo/bar.wsp")
+ 	fidx.files = append(fidx.files, "/foo/baz.wsp")
+-	carbonserver.UpdateFileIndex(&fidx)
++	carbonserver.indexUpdater().UpdateFileIndex(&fidx)
+ 
+ 	metrics, err := carbonserver.getMetricsList()
+ 	if err != nil {
+@@ -408,6 +416,54 @@ func TestGetMetricsListWithData(t *testing.T) {
+ 		t.Errorf("metrics: '%+v', expected [%s %s]", metrics, fidx.files[0], fidx.files[1])
+ 		return
+ 	}
++	close(tempChan)
++}
++
++func TestFetchNewMetricCacheOnly(t *testing.T){
++	tempIdx1 := make(chan metrics.MetricUpdate, 7)
++	path, err := ioutil.TempDir("", "")
++	if err != nil {
++		t.Fatal(err)
++	}
++	defer os.RemoveAll(path)
++	metricName := "newMetrix"
++	c := cache.New(tempIdx1)
++	c.Add(points.OnePoint(metricName, 0, int64(now-60)))
++
++	metricName = "newMetrix1"
++	c.Add(points.OnePoint(metricName, 1, int64(now-60)))
++
++	metricName = "newMetrix"
++	c.Add(points.OnePoint(metricName, 2, int64(now-60)))
++
++	metricName = "newMetrix2"
++	c.Add(points.OnePoint(metricName, 2, int64(now-60)))
++
++	metricName = "newMetri3"
++	c.Add(points.OnePoint(metricName, 2, int64(now-60)))
++
++	metricName = "newMetrix4"
++	c.Add(points.OnePoint(metricName, 2, int64(now-60)))
++
++	metricName = "newMetrix5"
++	c.Add(points.OnePoint(metricName, 2, int64(now-60)))
++
++	// metricName = "newMetrix6"
++	// c.Add(points.OnePoint(metricName, 2, int64(now-60)))
++
++	carbonserver := NewCarbonserverListener(c.Get,tempIdx1)
++	carbonserver.whisperData = path
++	carbonserver.logger = zap.NewNop()
++	carbonserver.metrics = &metricStruct{}
++
++	// carbonserver. := time.Tick(time.Duration(6)*time.Second)
++	carbonserver.exitChan = make(chan struct{})
++
++	fmt.Println("case1: Performing test for new metric")
++	idxUpdater := carbonserver.indexUpdater()
++	go idxUpdater.updateIndex()
++	time.Sleep(2 * time.Millisecond)
++	carbonserver.exitChan <- struct{}{}
+ }
+ 
+ func benchmarkFetchSingleMetricCommon(b *testing.B, test *FetchTest) {
+@@ -417,7 +473,8 @@ func benchmarkFetchSingleMetricCommon(b *testing.B, test *FetchTest) {
+ 	}
+ 	defer os.RemoveAll(path)
+ 	test.path = path
+-	cache := cache.New()
++	tempChan := make(chan metrics.MetricUpdate,4)
++	cache := cache.New(tempChan)
+ 
+ 	carbonserver := CarbonserverListener{
+ 		whisperData: test.path,
+@@ -447,6 +504,7 @@ func benchmarkFetchSingleMetricCommon(b *testing.B, test *FetchTest) {
+ 	}
+ 	b.StopTimer()
+ 	generalFetchSingleMetricRemove(test)
++	close(tempChan)
+ }
+ 
+ func BenchmarkFetchSingleMetricDataFile(b *testing.B) {
+diff --git a/carbonserver/trie_real_test.go b/carbonserver/trie_real_test.go
+index 3edaef2..fcddf6b 100644
+--- a/carbonserver/trie_real_test.go
++++ b/carbonserver/trie_real_test.go
+@@ -1,4 +1,4 @@
+-// +build real
++// +build real !skipchan
+ 
+ package carbonserver
+ 
+diff --git a/carbonserver/trie_test.go b/carbonserver/trie_test.go
+index 4bc3728..04f1d41 100644
+--- a/carbonserver/trie_test.go
++++ b/carbonserver/trie_test.go
+@@ -1,3 +1,5 @@
++// +build !skipchan
++
+ package carbonserver
+ 
+ import (
+@@ -46,7 +48,8 @@ func newTrieServer(files []string, withTrigram bool) *CarbonserverListener {
+ 
+ 	fmt.Printf("longest metric(%d): %s\n", trieIndex.depth, trieIndex.longestMetric)
+ 
+-	listener.UpdateFileIndex(&fileIndex{
++	// NewIndexUpdater(&listener).UpdateFileIndex(&fileIndex{
++	listener.indexUpdater().UpdateFileIndex(&fileIndex{
+ 		trieIdx: trieIndex,
+ 	})
+ 
+@@ -68,7 +71,10 @@ func newTrigramServer(files []string) *CarbonserverListener {
+ 	idx := trigram.NewIndex(files)
+ 	fmt.Printf("trigram index took %s\n", time.Now().Sub(start))
+ 
+-	listener.UpdateFileIndex(&fileIndex{
++	// indexUpdater := NewIndexUpdater(&listener)
++
++	// indexUpdater.UpdateFileIndex(&fileIndex{
++	listener.indexUpdater().UpdateFileIndex(&fileIndex{
+ 		idx:   idx,
+ 		files: files,
+ 	})

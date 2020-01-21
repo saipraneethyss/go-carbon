@@ -1,0 +1,36 @@
+make temp-test COMMAND="test -test.v"
+go test -test.v github.com/lomik/go-carbon/carbon
+=== RUN   TestStartStop
+--- PASS: TestStartStop (0.02s)
+=== RUN   TestReloadAndCollectorDeadlock
+--- PASS: TestReloadAndCollectorDeadlock (0.39s)
+=== RUN   TestFileScan
+temp dir is at -  /var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/file"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/file/name1"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/justname"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/path"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/path/to"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/path/to/file"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/path/to/file/name1"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/path/to/file/name2"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/path/to/file1"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/path/to/file1/name1"
+running second time
+===========================
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/file"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/file/name1"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/path"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/path/to"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/path/to/file"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/path/to/file/name1"
+visited file or dir: "/var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/test587906526/path/to/file1"
+--- PASS: TestFileScan (9.01s)
+=== RUN   TestRestore
+--- PASS: TestRestore (0.00s)
+PASS
+ok  	github.com/lomik/go-carbon/carbon	9.428s
+#make run-test COMMAND="vet"
+#make run-test COMMAND="test -race"

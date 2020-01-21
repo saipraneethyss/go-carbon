@@ -1,3 +1,5 @@
+// +build !skipchan
+
 package carbonserver
 
 import (
@@ -46,7 +48,8 @@ func newTrieServer(files []string, withTrigram bool) *CarbonserverListener {
 
 	fmt.Printf("longest metric(%d): %s\n", trieIndex.depth, trieIndex.longestMetric)
 
-	listener.UpdateFileIndex(&fileIndex{
+	// NewIndexUpdater(&listener).UpdateFileIndex(&fileIndex{
+	listener.indexUpdater().UpdateFileIndex(&fileIndex{
 		trieIdx: trieIndex,
 	})
 
@@ -68,7 +71,10 @@ func newTrigramServer(files []string) *CarbonserverListener {
 	idx := trigram.NewIndex(files)
 	fmt.Printf("trigram index took %s\n", time.Now().Sub(start))
 
-	listener.UpdateFileIndex(&fileIndex{
+	// indexUpdater := NewIndexUpdater(&listener)
+
+	// indexUpdater.UpdateFileIndex(&fileIndex{
+	listener.indexUpdater().UpdateFileIndex(&fileIndex{
 		idx:   idx,
 		files: files,
 	})

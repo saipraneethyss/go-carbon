@@ -1,3 +1,5 @@
+// +build !skipchan
+
 package carbonserver
 
 import (
@@ -14,6 +16,7 @@ import (
 	"github.com/dgryski/go-trigram"
 	"github.com/go-graphite/go-whisper"
 	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
+	"github.com/lomik/go-carbon/helper/metrics"
 	"github.com/lomik/go-carbon/cache"
 	"github.com/lomik/go-carbon/points"
 	"go.uber.org/zap"
@@ -124,6 +127,7 @@ func testFetchSingleMetricHelper(testData *FetchTest, cache *cache.Cache, carbon
 	}
 	defer generalFetchSingleMetricRemove(testData)
 	data, err := generalFetchSingleMetricHelper(testData, cache, carbonserver)
+	fmt.Fprintln(os.Stderr,"the data is: ",data)
 	return data, err
 }
 
@@ -225,6 +229,21 @@ var singleMetricTests = []FetchTest{
 		expectedIsAbsent: []bool{true, false, true, false, false, false, true},
 	},
 	{
+		name:             "data-cache-only",
+		createWhisper:    false,
+		fillWhisper:      false,
+		fillCache:        true,
+		from:             now - 420,
+		until:            now,
+		now:              now,
+		errIsNil:         true,
+		dataIsNil:        false,
+		cachePoints:      []point{{now - 123, 7.0}, {now - 119, 7.1}, {now - 45, 7.3}, {now - 243, 6.9}, {now - 67, 7.2}},
+		expectedStep:     60,
+		expectedValues:   []float64{0.0, 6.9, 0.0, 7.0, 7.2, 7.3, 0.0},
+		expectedIsAbsent: []bool{true, false, true, false, false, false, true},
+	},
+	{
 		name:          "data-file-cache-long",
 		createWhisper: true,
 		fillWhisper:   true,
@@ -249,14 +268,15 @@ func getSingleMetricTest(name string) *FetchTest {
 }
 
 func testFetchSingleMetricCommon(t *testing.T, test *FetchTest) {
-	cache := cache.New()
+	idxChan := make(chan metrics.MetricUpdate,4)
+	cache := cache.New(idxChan)
 	path, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(path)
 
-	carbonserver := NewCarbonserverListener(cache.Get)
+	carbonserver := NewCarbonserverListener(cache.Get,idxChan)
 	carbonserver.whisperData = path
 	carbonserver.logger = zap.NewNop()
 	carbonserver.metrics = &metricStruct{}
@@ -315,6 +335,11 @@ func TestFetchSingleMetricNonProperArchive(t *testing.T) {
 	testFetchSingleMetricCommon(t, test)
 }
 
+func TestFetchSingleMetricDataCacheOnly(t *testing.T) {
+	test := getSingleMetricTest("data-cache-only")
+	testFetchSingleMetricCommon(t, test)
+}
+
 /*
  * Test is fuzzy, until https://github.com/lomik/go-whisper/pull/5 is fixed
 func TestFetchSingleMetricCrossRetention(t *testing.T) {
@@ -347,7 +372,8 @@ func TestFetchSingleMetricDataCache(t *testing.T) {
 }
 
 func TestGetMetricsListEmpty(t *testing.T) {
-	cache := cache.New()
+	tempChan := make(chan metrics.MetricUpdate,4)
+	cache := cache.New(tempChan)
 	path, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatal(err)
@@ -367,10 +393,12 @@ func TestGetMetricsListEmpty(t *testing.T) {
 	if metrics != nil {
 		t.Errorf("metrics: '%v', expected: 'nil'", err)
 	}
+	close(tempChan)
 }
 
 func TestGetMetricsListWithData(t *testing.T) {
-	cache := cache.New()
+	tempChan := make(chan metrics.MetricUpdate,4)
+	cache := cache.New(tempChan)
 	path, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatal(err)
@@ -386,7 +414,7 @@ func TestGetMetricsListWithData(t *testing.T) {
 	fidx := fileIndex{}
 	fidx.files = append(fidx.files, "/foo/bar.wsp")
 	fidx.files = append(fidx.files, "/foo/baz.wsp")
-	carbonserver.UpdateFileIndex(&fidx)
+	carbonserver.indexUpdater().UpdateFileIndex(&fidx)
 
 	metrics, err := carbonserver.getMetricsList()
 	if err != nil {
@@ -408,6 +436,54 @@ func TestGetMetricsListWithData(t *testing.T) {
 		t.Errorf("metrics: '%+v', expected [%s %s]", metrics, fidx.files[0], fidx.files[1])
 		return
 	}
+	close(tempChan)
+}
+
+func TestFetchNewMetricCacheOnly(t *testing.T){
+	tempIdx1 := make(chan metrics.MetricUpdate, 7)
+	path, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(path)
+	metricName := "newMetrix"
+	c := cache.New(tempIdx1)
+	c.Add(points.OnePoint(metricName, 0, int64(now-60)))
+
+	metricName = "newMetrix1"
+	c.Add(points.OnePoint(metricName, 1, int64(now-60)))
+
+	metricName = "newMetrix"
+	c.Add(points.OnePoint(metricName, 2, int64(now-60)))
+
+	metricName = "newMetrix2"
+	c.Add(points.OnePoint(metricName, 2, int64(now-60)))
+
+	metricName = "newMetri3"
+	c.Add(points.OnePoint(metricName, 2, int64(now-60)))
+
+	metricName = "newMetrix4"
+	c.Add(points.OnePoint(metricName, 2, int64(now-60)))
+
+	metricName = "newMetrix5"
+	c.Add(points.OnePoint(metricName, 2, int64(now-60)))
+
+	// metricName = "newMetrix6"
+	// c.Add(points.OnePoint(metricName, 2, int64(now-60)))
+
+	carbonserver := NewCarbonserverListener(c.Get,tempIdx1)
+	carbonserver.whisperData = path
+	carbonserver.logger = zap.NewNop()
+	carbonserver.metrics = &metricStruct{}
+
+	// carbonserver. := time.Tick(time.Duration(6)*time.Second)
+	carbonserver.exitChan = make(chan struct{})
+
+	fmt.Println("case1: Performing test for new metric")
+	idxUpdater := carbonserver.indexUpdater()
+	go idxUpdater.updateIndex()
+	time.Sleep(2 * time.Millisecond)
+	carbonserver.exitChan <- struct{}{}
 }
 
 func benchmarkFetchSingleMetricCommon(b *testing.B, test *FetchTest) {
@@ -417,7 +493,8 @@ func benchmarkFetchSingleMetricCommon(b *testing.B, test *FetchTest) {
 	}
 	defer os.RemoveAll(path)
 	test.path = path
-	cache := cache.New()
+	tempChan := make(chan metrics.MetricUpdate,4)
+	cache := cache.New(tempChan)
 
 	carbonserver := CarbonserverListener{
 		whisperData: test.path,
@@ -447,6 +524,7 @@ func benchmarkFetchSingleMetricCommon(b *testing.B, test *FetchTest) {
 	}
 	b.StopTimer()
 	generalFetchSingleMetricRemove(test)
+	close(tempChan)
 }
 
 func BenchmarkFetchSingleMetricDataFile(b *testing.B) {

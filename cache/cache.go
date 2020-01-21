@@ -10,10 +10,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"strings"
 
 	"github.com/lomik/go-carbon/helper"
+	"github.com/lomik/go-carbon/helper/metrics"
 	"github.com/lomik/go-carbon/points"
 	"github.com/lomik/go-carbon/tags"
+	// "github.com/lomik/go-carbon/carbonserver"
 )
 
 type WriteStrategy int
@@ -44,6 +47,9 @@ type Cache struct {
 	writeStrategy WriteStrategy
 	writeoutQueue *WriteoutQueue
 
+	// idxUpdateChan chan carbonserver.MetricUpdate
+	idxUpdateChan chan metrics.MetricUpdate
+
 	settings atomic.Value // cacheSettings
 
 	stat struct {
@@ -66,10 +72,11 @@ type Shard struct {
 }
 
 // Creates a new cache instance
-func New() *Cache {
+func New(idxUptChan chan metrics.MetricUpdate) *Cache {
 	c := &Cache{
 		data:          make([]*Shard, shardCount),
 		writeStrategy: Noop,
+		idxUpdateChan: idxUptChan,
 	}
 
 	for i := 0; i < shardCount; i++ {
@@ -230,6 +237,11 @@ func (c *Cache) DivertToXlog(w io.Writer) {
 	c.settings.Store(&newSettings)
 }
 
+func cnvToWhispFormat(newMetric string) string {
+	m := "/"+newMetric+".wsp"
+	return strings.Replace(m,".","/",-1)
+}
+
 // Sets the given value under the specified key.
 func (c *Cache) Add(p *points.Points) {
 	s := c.settings.Load().(*cacheSettings)
@@ -263,6 +275,11 @@ func (c *Cache) Add(p *points.Points) {
 		values.Data = append(values.Data, p.Data...)
 	} else {
 		shard.items[p.Metric] = p
+		fmt.Println("******=====****** ADD operation in CACHE ;sending this info to channel", p.Metric)
+		c.idxUpdateChan <- metrics.MetricUpdate{
+			Name: cnvToWhispFormat(p.Metric),
+			Operation: metrics.ADD,
+		}
 	}
 	shard.Unlock()
 

@@ -1,0 +1,115 @@
+#make temp-test COMMAND="test -test.v -tags idchan"
+make temp-test COMMAND="test -v -tags skipchan"
+go test -v -tags skipchan github.com/lomik/go-carbon/carbonserver
+=== RUN   TestIndexUpdateOverChannel
+;;;;;;;;;;;; entered forcescan
+;;;;;;;;;;;; about to run filewalk
+previous filewalk info -  <nil>
+******=====****** ADD operation in CACHE ;sending this info to channel new.data.point1
+******=====****** ADD operation in CACHE ;sending this info to channel same.data.new.point1
+******=====****** ADD operation in CACHE ;sending this info to channel same.data.new.point2
+******=====****** ADD operation in CACHE ;sending this info to channel totally.new.point
+******=====****** ADD operation in CACHE ;sending this info to channel fresh.add
+the query is -  same.data.new.point2
+******=====****** ADD operation in FileWalk;sending this info to channel 
+*************** current index : map[]
+*************** IndexUpdater received ADD operation 
+*************** current index : map[/new/data/point1/wsp:{}]
+*************** IndexUpdater received ADD operation 
+*************** current index : map[/new/data/point1/wsp:{} /same/data/new/point1/wsp:{}]
+*************** IndexUpdater received ADD operation 
+*************** current index : map[/new/data/point1/wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{}]
+*************** IndexUpdater received ADD operation 
+*************** current index : map[/new/data/point1/wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received ADD operation 
+******=====****** ADD operation in FileWalk;sending this info to channel /file
+*************** current index : map[/fresh/add/wsp:{} /new/data/point1/wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received ADD operation 
+************* the expanded globs -  [{same/data/new/point2 [] []}]
+the query is -  new.data.point1
+******=====****** ADD operation in FileWalk;sending this info to channel /file/name1.wsp
+*************** current index : map[:{} /fresh/add/wsp:{} /new/data/point1/wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received ADD operation 
+************* the expanded globs -  [{new/data/point1 [] []}]
+*************** current index : map[:{} /file:{} /fresh/add/wsp:{} /new/data/point1/wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received ADD operation 
+******=====****** ADD operation in FileWalk;sending this info to channel /justname.wsp
+******=====****** ADD operation in FileWalk;sending this info to channel /path
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /new/data/point1/wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received ADD operation 
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /justname.wsp:{} /new/data/point1/wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received ADD operation 
+******=====****** ADD operation in FileWalk;sending this info to channel /path/to
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /justname.wsp:{} /new/data/point1/wsp:{} /path:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received ADD operation 
+******=====****** ADD operation in FileWalk;sending this info to channel /path/to/file
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /justname.wsp:{} /new/data/point1/wsp:{} /path:{} /path/to:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received ADD operation 
+******=====****** ADD operation in FileWalk;sending this info to channel /path/to/file/name1.wsp
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /justname.wsp:{} /new/data/point1/wsp:{} /path:{} /path/to:{} /path/to/file:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received ADD operation 
+******=====****** ADD operation in FileWalk;sending this info to channel /path/to/file/name2.wsp
+******=====****** ADD operation in FileWalk;sending this info to channel /path/to/file1
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /justname.wsp:{} /new/data/point1/wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received ADD operation 
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /justname.wsp:{} /new/data/point1/wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /path/to/file/name2.wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received ADD operation 
+******=====****** ADD operation in FileWalk;sending this info to channel /path/to/file1/name1.wsp
+======***====== completed OS fileWalk
+======***====== len of currfiles 11
+previous files are -  map[]
+******=====****** FLUSH operation;
+;;;;;;;;;;;; ran file walk
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /justname.wsp:{} /new/data/point1/wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /path/to/file/name2.wsp:{} /path/to/file1:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received ADD operation 
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /justname.wsp:{} /new/data/point1/wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /path/to/file/name2.wsp:{} /path/to/file1:{} /path/to/file1/name1.wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received FLUSH operation 
+*************** len of current index : 16
+========= reaches populateFileIndex
+========= reaches updateTrie
+infos for now: [{file_scan_runtime 8 4066  <nil>} {Files 11 16  <nil>}]
+;;;;;;;;;;;; entered scan frequency
+;;;;;;;;;;;; about to run filewalk
+previous filewalk info -  &{map[] 5 map[:{} /file:{} /file/name1.wsp:{} /justname.wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /path/to/file/name2.wsp:{} /path/to/file1:{} /path/to/file1/name1.wsp:{}] /var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/404058493}
+======***====== completed OS fileWalk
+======***====== len of currfiles 11
+previous files are -  map[:{} /file:{} /file/name1.wsp:{} /justname.wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /path/to/file/name2.wsp:{} /path/to/file1:{} /path/to/file1/name1.wsp:{}]
+******=====****** FLUSH operation;
+;;;;;;;;;;;; ran file walk
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /justname.wsp:{} /new/data/point1/wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /path/to/file/name2.wsp:{} /path/to/file1:{} /path/to/file1/name1.wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received FLUSH operation 
+*************** len of current index : 16
+========= reaches populateFileIndex
+========= reaches updateTrie
+infos for now: [{file_scan_runtime 8 5566  <nil>} {Files 11 16  <nil>}]
+the query is -  totally.new.point
+************* the expanded globs -  [{totally/new/point [] []}]
+;;;;;;;;;;;; entered scan frequency
+;;;;;;;;;;;; about to run filewalk
+previous filewalk info -  &{map[] 5 map[:{} /file:{} /file/name1.wsp:{} /justname.wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /path/to/file/name2.wsp:{} /path/to/file1:{} /path/to/file1/name1.wsp:{}] /var/folders/00/s2cvtqzs7hv_z3wc98mvy2ym0000gn/T/404058493}
+======***====== completed OS fileWalk
+======***====== len of currfiles 8
+previous files are -  map[:{} /file:{} /file/name1.wsp:{} /justname.wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /path/to/file/name2.wsp:{} /path/to/file1:{} /path/to/file1/name1.wsp:{}]
+******=====****** DEL operation;sending this info to channel /justname.wsp
+******=====****** DEL operation;sending this info to channel /path/to/file/name2.wsp
+******=====****** DEL operation;sending this info to channel /path/to/file1/name1.wsp
+******=====****** FLUSH operation;
+;;;;;;;;;;;; ran file walk
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /justname.wsp:{} /new/data/point1/wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /path/to/file/name2.wsp:{} /path/to/file1:{} /path/to/file1/name1.wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received DEL operation 
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /new/data/point1/wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /path/to/file/name2.wsp:{} /path/to/file1:{} /path/to/file1/name1.wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received DEL operation 
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /new/data/point1/wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /path/to/file1:{} /path/to/file1/name1.wsp:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received DEL operation 
+*************** current index : map[:{} /file:{} /file/name1.wsp:{} /fresh/add/wsp:{} /new/data/point1/wsp:{} /path:{} /path/to:{} /path/to/file:{} /path/to/file/name1.wsp:{} /path/to/file1:{} /same/data/new/point1/wsp:{} /same/data/new/point2/wsp:{} /totally/new/point/wsp:{}]
+*************** IndexUpdater received FLUSH operation 
+*************** len of current index : 13
+========= reaches populateFileIndex
+========= reaches updateTrie
+infos for now: [{file_scan_runtime 8 14271  <nil>} {Files 11 13  <nil>}]
+!!!!!!!! EXIT CASE !!!!!!!!!
+--- PASS: TestIndexUpdateOverChannel (7.01s)
+PASS
+ok  	github.com/lomik/go-carbon/carbonserver	7.020s
+#make run-test COMMAND="vet"
+#make run-test COMMAND="test -race"
