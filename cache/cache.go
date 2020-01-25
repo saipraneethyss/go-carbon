@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 	"strings"
+	"path/filepath"
 
 	"github.com/lomik/go-carbon/helper"
 	"github.com/lomik/go-carbon/helper/metrics"
@@ -237,9 +238,36 @@ func (c *Cache) DivertToXlog(w io.Writer) {
 	c.settings.Store(&newSettings)
 }
 
-func cnvToWhispFormat(newMetric string) string {
-	m := "/"+newMetric+".wsp"
-	return strings.Replace(m,".","/",-1)
+// func cnvToWhispFormat(newMetric string) string {
+// 	// m := "/"+newMetric+".wsp"
+// 	// return strings.Replace(m,".","/",-1)
+// 	m := "/"+strings.Replace(newMetric,".","/",-1)+".wsp"
+// 	return m
+// }
+
+func (c *Cache) sendToIdxUptChan(newMetric string) {
+	split := strings.Split(newMetric, ".")
+  name := "/"
+  for i, seg := range split {
+      name = filepath.Join(name, seg)
+      if i == len(split) - 1 {
+          name = name + ".wsp"
+      }
+      // files =  append(files, name)
+			newMetric := metrics.MetricUpdate{
+				Name: name,
+				Operation: metrics.ADD,
+			}
+			fmt.Println("******=====****** ADD operation in CACHE ;sending this info to channel - ", name )
+			// c.idxUpdateChan <-  newMetric
+			// for{
+				select {
+				case c.idxUpdateChan <-  newMetric:
+				default:
+					panic(fmt.Sprintf("index update channel is full, dropping this metric - %v",newMetric.Name))
+				}
+			// }
+  }
 }
 
 // Sets the given value under the specified key.
@@ -275,11 +303,13 @@ func (c *Cache) Add(p *points.Points) {
 		values.Data = append(values.Data, p.Data...)
 	} else {
 		shard.items[p.Metric] = p
-		fmt.Println("******=====****** ADD operation in CACHE ;sending this info to channel", p.Metric)
-		c.idxUpdateChan <- metrics.MetricUpdate{
-			Name: cnvToWhispFormat(p.Metric),
-			Operation: metrics.ADD,
-		}
+		// fmt.Println("******=====****** ADD operation in CACHE ;sending this info to channel", p.Metric)
+
+		c.sendToIdxUptChan(p.Metric)
+		// c.idxUpdateChan <- metrics.MetricUpdate{
+		// 	Name: cnvToWhispFormat(p.Metric),
+		// 	Operation: metrics.ADD,
+		// }
 	}
 	shard.Unlock()
 

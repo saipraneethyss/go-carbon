@@ -852,8 +852,9 @@ func (ti *trieIndex) setTrigrams() {
 
 func (listener *CarbonserverListener) expandGlobsTrie(query string) ([]string, []bool, error) {
 	query = strings.Replace(query, ".", "/", -1)
+	fmt.Println("*********========********** inside expandGlobsTrie")
 	globs := []string{query}
-
+	fmt.Println("*********========********** query is",query)
 	var slashInBraces, inAlter bool
 	for _, c := range query {
 		if c == '{' {
@@ -875,6 +876,8 @@ func (listener *CarbonserverListener) expandGlobsTrie(query string) ([]string, [
 	}
 
 	var fidx = listener.CurrentFileIndex()
+	fmt.Println("*********========********** CurrentFileIndex is",fidx)
+	fmt.Println("*********========********** globs is",globs)
 	var files []string
 	var leafs []bool
 
@@ -886,6 +889,7 @@ func (listener *CarbonserverListener) expandGlobsTrie(query string) ([]string, [
 		files = append(files, f...)
 		leafs = append(leafs, l...)
 	}
-
+	fmt.Println("*********========********** files are",files)
+	fmt.Println("*********========********** leaves are",leafs)
 	return files, leafs, nil
 }

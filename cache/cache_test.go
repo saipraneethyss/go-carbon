@@ -6,11 +6,13 @@ import (
 	"testing"
 
 	"github.com/lomik/go-carbon/points"
+	"github.com/lomik/go-carbon/helper/metrics"
+
 )
 
 func TestCache(t *testing.T) {
-
-	c := New()
+	tempChan := make(chan metrics.MetricUpdate,5)
+	c := New(tempChan)
 
 	c.Add(points.OnePoint("hello.world", 42, 10))
 
@@ -44,6 +46,7 @@ func TestCache(t *testing.T) {
 	if c.Size() != 0 {
 		t.FailNow()
 	}
+	close(tempChan)
 }
 
 var cache *Cache
@@ -52,7 +55,8 @@ func createCacheAndPopulate(metricsCount int, maxPointsPerMetric int) *Cache {
 	if cache != nil {
 		return cache
 	}
-	cache = New()
+	tChan := make(chan metrics.MetricUpdate,5)
+	cache = New(tChan)
 
 	for i := 0; i < metricsCount; i++ {
 		m := fmt.Sprintf("%d.metric.name.for.bench.test.%d", rand.Intn(metricsCount), i)

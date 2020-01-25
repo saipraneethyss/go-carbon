@@ -47,6 +47,7 @@ import (
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/go-carbon/helper"
 	// "github.com/lomik/go-carbon/helper/stat"
+	"github.com/lomik/go-carbon/persister"
 	"github.com/lomik/go-carbon/helper/metrics"
 	"github.com/lomik/go-carbon/points"
 	"github.com/lomik/zapwriter"
@@ -245,6 +246,7 @@ type CarbonserverListener struct {
 	percentiles       []int
 	scanFrequency     time.Duration
 	forceScanChan     chan struct{}
+	persisterMatch    func(key string) (*persister.Schema, *persister.WhisperAggregationItem)
 	metricsAsCounters bool
 	tcpListener       *net.TCPListener
 	logger            *zap.Logger
@@ -433,13 +435,16 @@ type jsonMetricDetailsResponse struct {
 	TotalSpace uint64
 }
 
-func NewCarbonserverListener(cacheGetFunc func(key string) []points.Point,idxUptChan chan metrics.MetricUpdate) *CarbonserverListener {
+func NewCarbonserverListener(cacheGetFunc func(key string) []points.Point,
+	idxUptChan chan metrics.MetricUpdate,
+	persisterMatchFunc func(key string) (*persister.Schema, *persister.WhisperAggregationItem)) *CarbonserverListener {
 	return &CarbonserverListener{
 		// Config variables
 		metrics:           &metricStruct{},
 		metricsAsCounters: false,
 		cacheGet:          cacheGetFunc,
 		indexUpdateChan:	 idxUptChan,
+		persisterMatch:    persisterMatchFunc,
 		logger:            zapwriter.Logger("carbonserver"),
 		accessLogger:      zapwriter.Logger("access"),
 		findCache:         queryCache{ec: expirecache.New(0)},
@@ -603,6 +608,7 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 	}(time.Now())
 
 	if listener.trieIndex && listener.CurrentFileIndex() != nil {
+		fmt.Println("*********========********** inside expandGlobs for trieIndex")
 		files, leafs, err := listener.expandGlobsTrie(query)
 		resultCh <- &ExpandedGlobResponse{query, files, leafs, err}
 		return
@@ -713,6 +719,7 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 
 // TODO(dgryski): add tests
 func (listener *CarbonserverListener) expandGlobBraces(globs []string) ([]string, error) {
+	fmt.Println("*********========********** inside expandGlobBraces")
 	for {
 		bracematch := false
 		var newglobs []string
@@ -929,7 +936,7 @@ func (listener *CarbonserverListener) Listen(listen string) error {
 		// go listener.indexUpdater.fileListUpdater()
 		// go idxUpdater.fileListUpdater()
 		go idxUpdater.updateIndex()
-		listener.forceScanChan <- struct{}{}
+		// listener.forceScanChan <- struct{}{}
 	}
 
 	listener.queryCache = queryCache{ec: expirecache.New(uint64(listener.queryCacheSizeMB))}

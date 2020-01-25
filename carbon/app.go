@@ -50,6 +50,7 @@ type App struct {
 	PromRegistry   *prometheus.Registry
 	// FileScan			 *fileScan
 	exit           chan bool
+	forceScan			 chan struct{}
 }
 
 // New App instance
@@ -59,6 +60,7 @@ func New(configFilename string) *App {
 		Config:         NewConfig(),
 		PromRegistry:   prometheus.NewPedanticRegistry(),
 		exit:           make(chan bool),
+		forceScan:			make(chan struct{}),
 	}
 
 	return app
@@ -243,6 +245,7 @@ func (app *App) stopAll() {
 
 	if app.exit != nil {
 		close(app.exit)
+		close(app.forceScan)
 		app.exit = nil
 		logger.Debug("close(exit)")
 	}
@@ -322,11 +325,9 @@ func (app *App) Start() (err error) {
 
 	app.Cache = core
 
-	// fWalk := metrics.NewFileScan(idxUptChan, conf.Carbonserver.ScanFrequency.Value(),conf.Whisper.DataDir)
-	// exitChan,forcescan := make(chan struct{}),make(chan struct{})
-	// go fWalk.RunFileWalk(forcescan,exitChan)
-	// forcescan <- struct{}{}
-	//praneethy: handle exit case
+	fWalk := metrics.NewFileScan(idxUptChan, conf.Carbonserver.ScanFrequency.Value(),conf.Whisper.DataDir)
+	go fWalk.RunFileWalk(app.forceScan,app.exit)
+	app.forceScan <- struct{}{}
 
 
 	/* API start */
@@ -429,7 +430,7 @@ func (app *App) Start() (err error) {
 			return
 		}
 
-		carbonserver := carbonserver.NewCarbonserverListener(core.Get,idxUptChan)
+		carbonserver := carbonserver.NewCarbonserverListener(core.Get,idxUptChan,app.Persister.Match)
 		carbonserver.SetWhisperData(conf.Whisper.DataDir)
 		carbonserver.SetMaxGlobs(conf.Carbonserver.MaxGlobs)
 		carbonserver.SetFLock(app.Config.Whisper.FLock)

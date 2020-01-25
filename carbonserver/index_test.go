@@ -10,10 +10,11 @@ import (
 	"testing"
 	"time"
   "context"
-	// "strings"
+	"regexp"
 	"github.com/lomik/go-carbon/helper/metrics"
 	"github.com/lomik/go-carbon/points"
   "github.com/lomik/go-carbon/cache"
+	"github.com/lomik/go-carbon/persister"
   "go.uber.org/zap"
 )
 
@@ -46,9 +47,26 @@ type testInfo struct {
 	fileScanObj     *metrics.FileScan
 	indexUpdateChan chan metrics.MetricUpdate
 	forceChan       chan struct{}
-	exitChan        chan struct{}
+	exitChan        chan bool
   testCache       *cache.Cache
   csListener      *CarbonserverListener
+}
+
+func getMetricRetentionAggregation(name string) (schema *persister.Schema, aggr *persister.WhisperAggregationItem) {
+    retentionStr := "60s:90d"
+    pattern, _ := regexp.Compile(".*")
+    retentions, _ := persister.ParseRetentionDefs(retentionStr)
+    f := false
+    schema = &persister.Schema{
+        Name:         "test",
+        Pattern:      pattern,
+        RetentionStr: retentionStr,
+        Retentions:   retentions,
+        Priority:     10,
+        Compressed:   &f,
+    }
+    aggr = persister.NewWhisperAggregation().Match(name)
+    return
 }
 
 func addFilePathToDir(filePath string, tmpDir string) error {
@@ -73,10 +91,11 @@ func getTestDir() (string, error) {
 
 func getTestInfo(dir string) *testInfo {
 	scanTime := 3 * time.Second
-	indexUptChan := make(chan metrics.MetricUpdate, 20)
+	indexUptChan := make(chan metrics.MetricUpdate, 100)
   c := cache.New(indexUptChan)
-  carbonserver := NewCarbonserverListener(c.Get,indexUptChan)
+  carbonserver := NewCarbonserverListener(c.Get,indexUptChan,getMetricRetentionAggregation)
   carbonserver.whisperData = dir
+	carbonserver.trieIndex = true
   carbonserver.logger = zap.NewNop()
   carbonserver.metrics = &metricStruct{}
   carbonserver.exitChan = make(chan struct{})
@@ -84,7 +103,7 @@ func getTestInfo(dir string) *testInfo {
 	return &testInfo{
 		indexUpdateChan: indexUptChan,
 		forceChan:       make(chan struct{}),
-		exitChan:        make(chan struct{}),
+		exitChan:        make(chan bool),
 		fileScanObj:     metrics.NewFileScan(indexUptChan, scanTime, dir),
     testCache:       c,
     csListener:      carbonserver,
@@ -104,7 +123,9 @@ func (f *testInfo) checkexpandblobs(t *testing.T, query string){
         return
     }
 
-    fmt.Println("************* the expanded globs - ",expandedGlobs)
+    fmt.Println("************* the expanded globs - ",expandedGlobs[0])
+		fmt.Printf("************* expanded globs struct - %#v\n",expandedGlobs)
+
     // file := expandedGlobs[0].Files[0]
 	// if file != query {
   //       t.Errorf("files: '%v', epxected: '%s'\n", file, query)
@@ -147,7 +168,11 @@ func TestIndexUpdateOverChannel(t *testing.T) {
   // go idxUpdater.updateIndex()
 
   //check expandblobs for new metrics
+	fmt.Println("querying expand blobs for file - ", addFiles[0])
+	f.checkexpandblobs(t,addFiles[0])
+	fmt.Println("querying expand blobs for cache only metric - ", addMetrics[2])
   f.checkexpandblobs(t,addMetrics[2])
+	fmt.Println("querying expand blobs for cache only metric - ", addMetrics[0])
   f.checkexpandblobs(t,addMetrics[0])
 	time.Sleep(5 * time.Second)
 
@@ -157,14 +182,16 @@ func TestIndexUpdateOverChannel(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-
+	fmt.Println("querying expand blobs for file - path.to.file.name1")
+	f.checkexpandblobs(t,"path.to.file.name1")
+	fmt.Println("querying expand blobs for cache only metric - ", addMetrics[3])
   f.checkexpandblobs(t,addMetrics[3])
+	fmt.Println("querying expand blobs for cache only metric - ", addMetrics[2])
+	f.checkexpandblobs(t,addMetrics[2])
+	fmt.Println("querying expand blobs for cache only metric - ", addMetrics[0])
+	f.checkexpandblobs(t,addMetrics[0])
 	time.Sleep(2 * time.Second)
-	f.exitChan <- struct{}{}
-
-
-
-
+	f.exitChan <- true
 
   //
 	// chanLen := len(f.indexUpdateChan)

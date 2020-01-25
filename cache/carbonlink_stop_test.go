@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/lomik/go-carbon/helper/metrics"
 )
 
 func TestStopCarbonLink(t *testing.T) {
@@ -12,8 +13,8 @@ func TestStopCarbonLink(t *testing.T) {
 
 	addr, err := net.ResolveTCPAddr("tcp", ":0")
 	assert.NoError(err)
-
-	cache := New()
+	tChan := make(chan metrics.MetricUpdate,5)
+	cache := New(tChan)
 
 	for i := 0; i < 10; i++ {
 		listener := NewCarbonlinkListener(cache)
@@ -21,4 +22,5 @@ func TestStopCarbonLink(t *testing.T) {
 		addr = listener.Addr().(*net.TCPAddr) // listen same port in next iteration
 		listener.Stop()
 	}
+	close(tChan)
 }

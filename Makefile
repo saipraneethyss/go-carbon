@@ -43,12 +43,12 @@ temp-test:
 #	$(GO) $(COMMAND) $(MODULE)/carbon
 
 test:
-	make temp-test COMMAND="test -test.v"
-#	make temp-test COMMAND="test -v -tags skipchan"
+#	make temp-test COMMAND="test -test.v"
+	make temp-test COMMAND="test -v -tags skipchan"
 #	make temp-test COMMAND="test"
 #	make run-test COMMAND="test"
-	#make run-test COMMAND="vet"
-	#make run-test COMMAND="test -race"
+#	make run-test COMMAND="vet"
+#	make run-test COMMAND="test -race"
 
 gox-build:
 	rm -rf build

@@ -21,6 +21,10 @@ type WhisperAggregationItem struct {
 	aggregationMethod    whisper.AggregationMethod
 }
 
+func NewWhisperAggregationItem() *WhisperAggregationItem {
+    return &WhisperAggregationItem{}
+}
+
 // WhisperAggregation ...
 type WhisperAggregation struct {
 	Data    []*WhisperAggregationItem
@@ -46,9 +50,17 @@ func (wai *WhisperAggregationItem) Name() string {
 	return wai.name
 }
 
+func (wai *WhisperAggregationItem) SetName(name string) {
+	wai.name = name
+}
+
 // Pattern get aggregation pattern
 func (wai *WhisperAggregationItem) Pattern() *regexp.Regexp {
 	return wai.pattern
+}
+
+func (wai *WhisperAggregationItem) SetPattern(pattern *regexp.Regexp) {
+	wai.pattern = pattern
 }
 
 // XFilesFactor get aggregation xFilesFactor
@@ -56,9 +68,17 @@ func (wai *WhisperAggregationItem) XFilesFactor() float64 {
 	return wai.xFilesFactor
 }
 
+func (wai *WhisperAggregationItem) SetXFilesFactor(xff float64) {
+	wai.xFilesFactor = xff
+}
+
 // AggregationMethod get aggregation method
 func (wai *WhisperAggregationItem) AggregationMethod() whisper.AggregationMethod {
 	return wai.aggregationMethod
+}
+
+func (wai *WhisperAggregationItem) SetAggregationMethod(agg whisper.AggregationMethod) {
+	wai.aggregationMethod = agg
 }
 
 // ReadWhisperAggregation ...

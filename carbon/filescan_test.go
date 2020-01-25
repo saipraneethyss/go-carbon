@@ -30,7 +30,7 @@ type testInfo struct {
 	fileScanObj     *metrics.FileScan
 	indexUpdateChan chan metrics.MetricUpdate
 	forceChan       chan struct{}
-	exitChan        chan struct{}
+	exitChan        chan bool
 }
 
 func addFilePathToDir(filePath string, tmpDir string) error {
@@ -84,7 +84,7 @@ func getTestInfo(dir string) *testInfo {
 	return &testInfo{
 		indexUpdateChan: indexUptChan,
 		forceChan:       make(chan struct{}),
-		exitChan:        make(chan struct{}),
+		exitChan:        make(chan bool),
 		// fileScanObj:     app.fileScan(indexUptChan, scanTime, dir),
 		fileScanObj:     metrics.NewFileScan(indexUptChan, scanTime, dir),
 	}
@@ -100,12 +100,12 @@ func TestFileScan(t *testing.T) {
 
 	for _, filePath := range addFiles {
 		if err = addFilePathToDir(filePath, tmpDir); err != nil {
-			fmt.Errorf("error creating temp directory for - %s\n error is: %v\n", filePath, err)
+			// fmt.Errorf("error creating temp directory for - %s\n error is: %v\n", filePath, err)
 			t.Fatal(err)
 		}
 	}
 
-	fmt.Println("temp dir is at - ", tmpDir)
+	// fmt.Println("temp dir is at - ", tmpDir)
 
 	f := getTestInfo(tmpDir)
 	go f.fileScanObj.RunFileWalk(f.forceChan, f.exitChan)
@@ -114,15 +114,15 @@ func TestFileScan(t *testing.T) {
 
 	for _, filePath := range removeFiles {
 		if err = removeFileFromDir(filePath, tmpDir); err != nil {
-			fmt.Errorf("error removing file from temp directory - %s\n error is: %v\n", filePath, err)
+			// fmt.Errorf("error removing file from temp directory - %s\n error is: %v\n", filePath, err)
 			t.Fatal(err)
 		}
 	}
 	time.Sleep(2 * time.Second)
-	f.exitChan <- struct{}{}
+	f.exitChan <- true
 
 	chanLen := len(f.indexUpdateChan)
-	fmt.Println("len of indexupdate channel - ", chanLen)
+	// fmt.Println("len of indexupdate channel - ", chanLen)
 	for i := 0; i < chanLen; i++ {
 		fmt.Fprintln(os.Stderr, "the value is ", <-f.indexUpdateChan)
 	}

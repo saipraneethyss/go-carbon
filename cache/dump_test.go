@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/lomik/go-carbon/points"
+	"github.com/lomik/go-carbon/helper/metrics"
 )
 
 type NopWriter struct {
@@ -17,15 +18,16 @@ func (w *NopWriter) Write(b []byte) (int, error) {
 }
 
 func fillCacheForDump() *Cache {
-	metrics := 1000000
+	_metrics := 1000000
 	pointsCount := 5
 
-	c := New()
-	c.SetMaxSize(uint32(pointsCount*metrics + 1))
+	tChan := make(chan metrics.MetricUpdate, 5)
+	c := New(tChan)
+	c.SetMaxSize(uint32(pointsCount*_metrics + 1))
 
 	baseTimestamp := time.Now().Unix()
 
-	for i := 0; i < metrics; i++ {
+	for i := 0; i < _metrics; i++ {
 		for j := 0; j < pointsCount; j++ {
 			c.Add(points.OnePoint(
 				fmt.Sprintf("carbon.localhost.cache.size%d", i),
@@ -34,7 +36,6 @@ func fillCacheForDump() *Cache {
 			))
 		}
 	}
-
 	return c
 }
 

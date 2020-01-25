@@ -24,6 +24,13 @@ type Schema struct {
 	Compressed   *bool
 }
 
+func (s Schema) ResolveRetentions() (retentions []whisper.Retention) {
+    for _, retention := range s.Retentions {
+        retentions = append(retentions, *retention)
+    }
+    return
+}
+
 // WhisperSchemas contains schema settings
 type WhisperSchemas []Schema
 
@@ -31,14 +38,14 @@ func (s WhisperSchemas) Len() int           { return len(s) }
 func (s WhisperSchemas) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s WhisperSchemas) Less(i, j int) bool { return s[i].Priority >= s[j].Priority }
 
-// Match finds the schema for metric or returns false if none found
-func (s WhisperSchemas) Match(metric string) (Schema, bool) {
+// Match finds the schema for metric or returns nil if none found
+func (s WhisperSchemas) Match(metric string) *Schema {
 	for _, schema := range s {
 		if schema.Pattern.MatchString(metric) {
-			return schema, true
+			return &schema
 		}
 	}
-	return Schema{}, false
+	return nil
 }
 
 // ParseRetentionDefs parses retention definitions into a Retentions structure

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"github.com/lomik/go-carbon/helper/metrics"
 	"github.com/lomik/go-carbon/cache"
 	"github.com/lomik/go-carbon/points"
+	"github.com/lomik/go-carbon/persister"
 	"go.uber.org/zap"
 )
 
@@ -102,10 +104,10 @@ func generalFetchSingleMetricInit(testData *FetchTest, cache *cache.Cache) error
 			}
 		}
 		wsp.Close()
-		if testData.fillCache {
-			for _, p := range testData.cachePoints {
-				cache.Add(points.OnePoint(testData.name, p.Value, int64(p.Timestamp)))
-			}
+	}
+	if testData.fillCache {
+		for _, p := range testData.cachePoints {
+			cache.Add(points.OnePoint(testData.name, p.Value, int64(p.Timestamp)))
 		}
 	}
 	return nil
@@ -127,7 +129,7 @@ func testFetchSingleMetricHelper(testData *FetchTest, cache *cache.Cache, carbon
 	}
 	defer generalFetchSingleMetricRemove(testData)
 	data, err := generalFetchSingleMetricHelper(testData, cache, carbonserver)
-	fmt.Fprintln(os.Stderr,"the data is: ",data)
+	// fmt.Fprintln(os.Stderr,"the data is: ",data)
 	return data, err
 }
 
@@ -141,6 +143,9 @@ var singleMetricTests = []FetchTest{
 		fillCache:     true,
 		errIsNil:      false,
 		dataIsNil:     true,
+		from:          now - 300,
+		until:         now,
+		now:           now,
 		expectedErr:   "open %f: no such file or directory",
 	},
 	{
@@ -267,6 +272,23 @@ func getSingleMetricTest(name string) *FetchTest {
 	return nil
 }
 
+func getMetricRetentionAggregation(name string) (schema *persister.Schema, aggr *persister.WhisperAggregationItem) {
+    retentionStr := "60s:90d"
+    pattern, _ := regexp.Compile(".*")
+    retentions, _ := persister.ParseRetentionDefs(retentionStr)
+    f := false
+    schema = &persister.Schema{
+        Name:         "test",
+        Pattern:      pattern,
+        RetentionStr: retentionStr,
+        Retentions:   retentions,
+        Priority:     10,
+        Compressed:   &f,
+    }
+    aggr = persister.NewWhisperAggregation().Match(name)
+    return
+}
+
 func testFetchSingleMetricCommon(t *testing.T, test *FetchTest) {
 	idxChan := make(chan metrics.MetricUpdate,4)
 	cache := cache.New(idxChan)
@@ -276,7 +298,7 @@ func testFetchSingleMetricCommon(t *testing.T, test *FetchTest) {
 	}
 	defer os.RemoveAll(path)
 
-	carbonserver := NewCarbonserverListener(cache.Get,idxChan)
+	carbonserver := NewCarbonserverListener(cache.Get,idxChan,getMetricRetentionAggregation)
 	carbonserver.whisperData = path
 	carbonserver.logger = zap.NewNop()
 	carbonserver.metrics = &metricStruct{}
@@ -300,7 +322,7 @@ func testFetchSingleMetricCommon(t *testing.T, test *FetchTest) {
 			t.Errorf("Unexpected empty data")
 			return
 		}
-		fmt.Printf("%+v\n\n", data)
+		// fmt.Printf("%+v\n\n", data)
 		if data.StepTime != test.expectedStep {
 			t.Errorf("Unepxected step: '%v', expected: '%v'\n", data.StepTime, test.expectedStep)
 			return
@@ -471,7 +493,7 @@ func TestFetchNewMetricCacheOnly(t *testing.T){
 	// metricName = "newMetrix6"
 	// c.Add(points.OnePoint(metricName, 2, int64(now-60)))
 
-	carbonserver := NewCarbonserverListener(c.Get,tempIdx1)
+	carbonserver := NewCarbonserverListener(c.Get,tempIdx1,getMetricRetentionAggregation)
 	carbonserver.whisperData = path
 	carbonserver.logger = zap.NewNop()
 	carbonserver.metrics = &metricStruct{}

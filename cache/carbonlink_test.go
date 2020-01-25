@@ -9,6 +9,7 @@ import (
 
 	"github.com/lomik/go-carbon/points"
 	"github.com/stretchr/testify/assert"
+	"github.com/lomik/go-carbon/helper/metrics"
 )
 
 const sampleCacheQuery = "\x00\x00\x00Y\x80\x02}q\x01(U\x06metricq\x02U,carbon.agents.carbon_agent_server.cache.sizeq\x03U\x04typeq\x04U\x0bcache-queryq\x05u."
@@ -17,8 +18,8 @@ const sampleCacheQuery3 = "\x00\x00\x00R\x80\x02}(U\x06metricX,\x00\x00\x00carbo
 
 func TestCarbonlink(t *testing.T) {
 	assert := assert.New(t)
-
-	cache := New()
+	tChan := make(chan metrics.MetricUpdate,5)
+	cache := New(tChan)
 
 	msg1 := points.OnePoint(
 		"carbon.agents.carbon_agent_server.cache.size",
@@ -160,12 +161,13 @@ func TestCarbonlink(t *testing.T) {
 
 	assert.Equal("\x80\x02}q\x00U\x05errorq\x01U\x1aInvalid request type \"foo\"q\x02s.", string(data))
 	cleanup()
+	close(tChan)
 }
 
 func TestCarbonlinkErrors(t *testing.T) {
 	assert := assert.New(t)
-
-	cache := New()
+	tChan := make(chan metrics.MetricUpdate,5)
+	cache := New(tChan)
 
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	assert.NoError(err)
@@ -228,6 +230,7 @@ func TestCarbonlinkErrors(t *testing.T) {
 		conn.Close()
 
 	}
+	close(tChan)
 }
 
 func TestNewCarbonlinkRequest(t *testing.T) {

@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/lomik/go-carbon/points"
+	"github.com/lomik/go-carbon/helper/metrics"
 )
 
 func TestInFlight(t *testing.T) {
 	var data []points.Point
-
-	c := New()
+	tChan := make(chan metrics.MetricUpdate,5)
+	c := New(tChan)
 
 	c.Add(points.OnePoint("hello.world", 42, 10))
 
@@ -58,10 +59,12 @@ func TestInFlight(t *testing.T) {
 	if len(data) != 2 || data[0].Value != 43 || data[1].Value != 44 {
 		t.FailNow()
 	}
+	close(tChan)
 }
 
 func BenchmarkPopNotConfirmed(b *testing.B) {
-	c := New()
+	tChan := make(chan metrics.MetricUpdate,5)
+	c := New(tChan)
 	p1 := points.OnePoint("hello.world", 42, 10)
 	var p2 *points.Points
 
@@ -74,10 +77,12 @@ func BenchmarkPopNotConfirmed(b *testing.B) {
 	if !p1.Eq(p2) {
 		b.FailNow()
 	}
+	close(tChan)
 }
 
 func BenchmarkPopNotConfirmed100(b *testing.B) {
-	c := New()
+	tChan := make(chan metrics.MetricUpdate,5)
+	c := New(tChan)
 
 	for i := 0; i < 100; i++ {
 		c.Add(points.OnePoint("hello.world", 42, 10))
@@ -96,10 +101,12 @@ func BenchmarkPopNotConfirmed100(b *testing.B) {
 	if !p1.Eq(p2) {
 		b.FailNow()
 	}
+	close(tChan)
 }
 
 func BenchmarkPop(b *testing.B) {
-	c := New()
+	tChan := make(chan metrics.MetricUpdate,5)
+	c := New(tChan)
 	p1 := points.OnePoint("hello.world", 42, 10)
 	var p2 *points.Points
 
@@ -111,9 +118,11 @@ func BenchmarkPop(b *testing.B) {
 	if !p1.Eq(p2) {
 		b.FailNow()
 	}
+	close(tChan)
 }
 func BenchmarkGet(b *testing.B) {
-	c := New()
+	tChan := make(chan metrics.MetricUpdate,5)
+	c := New(tChan)
 	c.Add(points.OnePoint("hello.world", 42, 10))
 
 	var d []points.Point
@@ -124,10 +133,12 @@ func BenchmarkGet(b *testing.B) {
 	if len(d) != 1 {
 		b.FailNow()
 	}
+	close(tChan)
 }
 
 func BenchmarkGetNotConfirmed1(b *testing.B) {
-	c := New()
+	tChan := make(chan metrics.MetricUpdate,5)
+	c := New(tChan)
 
 	c.Add(points.OnePoint("hello.world", 42, 10))
 	c.PopNotConfirmed("hello.world")
@@ -140,10 +151,12 @@ func BenchmarkGetNotConfirmed1(b *testing.B) {
 	if len(d) != 1 {
 		b.FailNow()
 	}
+	close(tChan)
 }
 
 func BenchmarkGetNotConfirmed100(b *testing.B) {
-	c := New()
+	tChan := make(chan metrics.MetricUpdate,5)
+	c := New(tChan)
 
 	for i := 0; i < 100; i++ {
 		c.Add(points.OnePoint("hello.world", 42, 10))
@@ -158,10 +171,12 @@ func BenchmarkGetNotConfirmed100(b *testing.B) {
 	if len(d) != 100 {
 		b.FailNow()
 	}
+	close(tChan)
 }
 
 func BenchmarkGetNotConfirmed100Miss(b *testing.B) {
-	c := New()
+	tChan := make(chan metrics.MetricUpdate,5)
+	c := New(tChan)
 
 	for i := 0; i < 100; i++ {
 		c.Add(points.OnePoint("hello.world", 42, 10))
@@ -176,4 +191,5 @@ func BenchmarkGetNotConfirmed100Miss(b *testing.B) {
 	if d != nil {
 		b.FailNow()
 	}
+	close(tChan)
 }

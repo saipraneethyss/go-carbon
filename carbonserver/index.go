@@ -114,20 +114,21 @@ func (indexUpdater *indexInfo) updateIndex() {
 			fmt.Fprintln(os.Stderr, "*************** exit case")
 			return
 		case update := <-indexUpdater.idxUpdateChan:
-			fmt.Fprintln(os.Stderr, "*************** current index :", indexUpdater.metricsMap)
+			// fmt.Fprintln(os.Stderr, "*************** current index :", indexUpdater.metricsMap)
 			switch update.Operation {
 			case metrics.ADD:
 				// append to index
-				fmt.Fprintln(os.Stderr, "*************** IndexUpdater received ADD operation ")
+				// fmt.Fprintln(os.Stderr, "*************** IndexUpdater received ADD operation ")
 				indexUpdater.metricsMap[update.Name] = struct{}{}
 			case metrics.DEL:
 				//delete from index
 				// https://stackoverflow.com/a/1736032
-				fmt.Fprintln(os.Stderr, "*************** IndexUpdater received DEL operation ")
+				// fmt.Fprintln(os.Stderr, "*************** IndexUpdater received DEL operation ")
 				delete(indexUpdater.metricsMap, update.Name)
 			case metrics.FLUSH:
 				// populate trie
 				fmt.Fprintln(os.Stderr, "*************** IndexUpdater received FLUSH operation ")
+				fmt.Fprintln(os.Stderr, "*************** current index :", indexUpdater.metricsMap)
 				fmt.Fprintln(os.Stderr, "*************** len of current index :", len(indexUpdater.metricsMap))
 				indexUpdater.fileWalkInfo = update.FileWalkInfo
 				//update files with metrics from cache ADDs
@@ -244,7 +245,7 @@ func (indexUpdater *indexInfo) updateTrie(nfidx *fileIndex, infos []zap.Field, l
 	fmt.Fprintln(os.Stderr, "========= reaches updateTrie")
 	var indexType = "trigram"
 	t0 := time.Now()
-	fmt.Fprintln(os.Stderr, "infos for now:", infos)
+	// fmt.Fprintln(os.Stderr, "infos for now:", infos)
 	if indexUpdater.csListener.trieIndex {
 		indexType = "trie"
 		nfidx.trieIdx = newTrie(".wsp")
@@ -255,6 +256,7 @@ func (indexUpdater *indexInfo) updateTrie(nfidx *fileIndex, infos []zap.Field, l
 				errs = append(errs, err)
 			}
 		}
+		fmt.Fprintln(os.Stderr, "========= trieIndex", nfidx.trieIdx)
 		infos = append(
 			infos,
 			zap.Int("trie_depth", nfidx.trieIdx.depth),
@@ -275,8 +277,11 @@ func (indexUpdater *indexInfo) updateTrie(nfidx *fileIndex, infos []zap.Field, l
 			currFiles[i] = file
 			i++
 		}
+		// fmt.Println("curr files : ",currFiles)
+		// fmt.Fprintln(os.Stderr, "========= trigram")
 		nfidx.files = currFiles
 		nfidx.idx = trigram.NewIndex(currFiles)
+		// fmt.Println("trigram index : ",nfidx.idx)
 		pruned = nfidx.idx.Prune(0.95)
 	}
 	indexSize := len(nfidx.idx)
@@ -305,6 +310,7 @@ func (indexUpdater *indexInfo) updateTrie(nfidx *fileIndex, infos []zap.Field, l
 	rdTimeUpdateRuntime := time.Since(tl)
 
 	indexUpdater.UpdateFileIndex(nfidx)
+	fmt.Fprintln(os.Stderr, "========= updated the fileIndex in updateTrie")
 
 	infos = append(infos,
 		zap.Duration("indexing_runtime", indexingRuntime),
