@@ -62,13 +62,13 @@ func (fScan *FileScan) RunFileWalk(forceChan <-chan struct{}, exitChan <-chan bo
 			fmt.Fprintln(os.Stderr, "!!!!!!!! EXIT CASE !!!!!!!!!")
 			return
 		case <-fScan.Scan:
-			fmt.Fprintln(os.Stderr, ";;;;;;;;;;;; entered scan frequency")
+			fmt.Fprintln(os.Stderr, "******=====******  entered scan frequency")
 		case <-forceChan:
-			fmt.Fprintln(os.Stderr, ";;;;;;;;;;;; entered forcescan")
+			fmt.Fprintln(os.Stderr, "******=====******  entered forcescan")
 		}
-		fmt.Fprintln(os.Stderr, ";;;;;;;;;;;; about to run filewalk")
+		fmt.Fprintln(os.Stderr, "******=====******  about to run filewalk")
 		fScan.fileWalkHelper()
-		fmt.Fprintln(os.Stderr, ";;;;;;;;;;;; ran file walk")
+		fmt.Fprintln(os.Stderr, "******=====******  ran file walk")
 	}
 }
 
@@ -109,6 +109,7 @@ func (fScan *FileScan) fileWalkHelper() {
 			return nil
 		}
 		hasSuffix := strings.HasSuffix(info.Name(), ".wsp")
+    isexample := strings.HasPrefix(info.Name(),"example")
 		if info.IsDir() || hasSuffix {
 			trimmedName := strings.TrimPrefix(path, dir)
 			currWalk.Files[trimmedName] = struct{}{}
@@ -118,10 +119,23 @@ func (fScan *FileScan) fileWalkHelper() {
 			}
 			if !exists || prevFiles == nil {
 				// fmt.Fprintln(os.Stderr, "******=====****** ADD operation in FileWalk;sending this info to channel", trimmedName)
-				fScan.IdxUpdateChan <- MetricUpdate{
+				// fScan.IdxUpdateChan <- MetricUpdate{
+				// 	Name:      trimmedName,
+				// 	Operation: ADD,
+				// }
+        newMetric := MetricUpdate{
 					Name:      trimmedName,
 					Operation: ADD,
 				}
+        select {
+        case fScan.IdxUpdateChan  <-  newMetric:
+          if isexample {
+            fmt.Fprintln(os.Stderr, "******=====****** ADD operation in FileWalk;sending this info to channel", trimmedName)
+          }
+        default:
+          fmt.Fprintln(os.Stderr, "******=====****** index update channel is full in filewalk")
+          panic(fmt.Sprintf("index update channel is full in filewalk, dropping this metric - %v",newMetric.Name))
+        }
 			}
 			if hasSuffix {
 				currWalk.MetricsKnown++
@@ -151,7 +165,7 @@ func (fScan *FileScan) fileWalkHelper() {
 	for file, _ := range prevFiles {
 		_, retain := currWalk.Files[file]
 		if !retain {
-			// fmt.Fprintln(os.Stderr, "******=====****** DEL operation;sending this info to channel", file)
+			fmt.Fprintln(os.Stderr, "******=====****** DEL operation;sending this info to channel", file)
 			fScan.IdxUpdateChan <- MetricUpdate{
 				Name:      file,
 				Operation: DEL,
@@ -160,7 +174,7 @@ func (fScan *FileScan) fileWalkHelper() {
 	}
 
 	fScan.FileWalkInfo = currWalk
-	// fmt.Fprintln(os.Stderr, "******=====****** FLUSH operation;")
+	fmt.Fprintln(os.Stderr, "******=====****** FLUSH operation;")
 	fScan.IdxUpdateChan <- MetricUpdate{
 		Name:         "",
 		Operation:    FLUSH,

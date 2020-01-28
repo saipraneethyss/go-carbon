@@ -340,7 +340,13 @@ func (listener *CarbonserverListener) prepareDataProto(ctx context.Context, logg
 		metricNames[i] = k
 		i++
 	}
+	prin :=  strings.HasPrefix(metricNames[0],"example")
+
 	expandedGlobs, err := listener.getExpandedGlobs(ctx, logger, time.Now(), metricNames)
+	if prin {
+		fmt.Println("******=====****** metric names for expandedglobs - ", metricNames )
+		fmt.Println("******=====****** expandedglobs - ", expandedGlobs )
+	}
 
 	if expandedGlobs == nil {
 		return fetchResponse{nil, contentType, 0, 0, 0, nil}, err
@@ -524,6 +530,9 @@ func (listener *CarbonserverListener) fetchDataPB3(pathExpression string, files 
 func (listener *CarbonserverListener) fetchDataPB(metric string, files []string, leafs []bool, fromTime, untilTime int32) (*protov2.MultiFetchResponse, error) {
 	var multi protov2.MultiFetchResponse
 	var errs []error
+	if strings.HasPrefix(metric,"example"){
+		fmt.Println("fetch data received- metric: ",metric," files:", files," leafs:",leafs)
+	}
 	for i, metric := range files {
 		if !leafs[i] {
 			listener.logger.Debug("skipping directory", zap.String("metric", metric))

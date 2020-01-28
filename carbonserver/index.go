@@ -118,7 +118,7 @@ func (indexUpdater *indexInfo) updateIndex() {
 			switch update.Operation {
 			case metrics.ADD:
 				// append to index
-				// fmt.Fprintln(os.Stderr, "*************** IndexUpdater received ADD operation ")
+				fmt.Fprintln(os.Stderr, "*************** IndexUpdater received ADD operation ")
 				indexUpdater.metricsMap[update.Name] = struct{}{}
 			case metrics.DEL:
 				//delete from index
@@ -128,7 +128,7 @@ func (indexUpdater *indexInfo) updateIndex() {
 			case metrics.FLUSH:
 				// populate trie
 				fmt.Fprintln(os.Stderr, "*************** IndexUpdater received FLUSH operation ")
-				fmt.Fprintln(os.Stderr, "*************** current index :", indexUpdater.metricsMap)
+				// fmt.Fprintln(os.Stderr, "*************** current index :", indexUpdater.metricsMap)
 				fmt.Fprintln(os.Stderr, "*************** len of current index :", len(indexUpdater.metricsMap))
 				indexUpdater.fileWalkInfo = update.FileWalkInfo
 				//update files with metrics from cache ADDs
@@ -320,6 +320,7 @@ func (indexUpdater *indexInfo) updateTrie(nfidx *fileIndex, infos []zap.Field, l
 		zap.String("index_type", indexType),
 		zap.Duration("total_runtime", time.Since(t0)),
 	)
+	fmt.Fprintln(os.Stderr, "========= fileIndex updatetime - ", indexingRuntime)
 
 	logger.Info("file list updated", infos...)
 }

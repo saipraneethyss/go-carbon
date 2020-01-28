@@ -719,7 +719,7 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 
 // TODO(dgryski): add tests
 func (listener *CarbonserverListener) expandGlobBraces(globs []string) ([]string, error) {
-	fmt.Println("*********========********** inside expandGlobBraces")
+	// fmt.Println("*********========********** inside expandGlobBraces")
 	for {
 		bracematch := false
 		var newglobs []string

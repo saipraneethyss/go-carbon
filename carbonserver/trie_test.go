@@ -131,36 +131,36 @@ func TestTrieIndex(t *testing.T) {
 		hasError bool
 		expect   []string
 	}{
-		// {
-		// 	input:  commonFiles,
-		// 	query:  "service-00",
-		// 	expect: []string{"service-00"},
-		// },
-		// {
-		// 	input:  commonFiles,
-		// 	query:  "service-00.server-000.metric-namespace-000.cpu",
-		// 	expect: []string{"service-00.server-000.metric-namespace-000.cpu"},
-		// },
-		//
-		// {
-		// 	input: commonFiles,
-		// 	query: "service-00.server-000.metric-namespace-00[0-2].cpu",
-		// 	expect: []string{
-		// 		"service-00.server-000.metric-namespace-000.cpu",
-		// 		"service-00.server-000.metric-namespace-001.cpu",
-		// 		"service-00.server-000.metric-namespace-002.cpu",
-		// 	},
-		// },
-		// {
-		// 	input: commonFiles,
-		// 	query: "service-00.server-00[0-2].metric-namespace-00[0-2].cpu",
-		// 	expect: []string{
-		// 		"service-00.server-000.metric-namespace-000.cpu",
-		// 		"service-00.server-000.metric-namespace-001.cpu",
-		// 		"service-00.server-000.metric-namespace-002.cpu",
-		// 		"service-00.server-001.metric-namespace-002.cpu",
-		// 	},
-		// },
+		{
+			input:  commonFiles,
+			query:  "service-00",
+			expect: []string{"service-00"},
+		},
+		{
+			input:  commonFiles,
+			query:  "service-00.server-000.metric-namespace-000.cpu",
+			expect: []string{"service-00.server-000.metric-namespace-000.cpu"},
+		},
+
+		{
+			input: commonFiles,
+			query: "service-00.server-000.metric-namespace-00[0-2].cpu",
+			expect: []string{
+				"service-00.server-000.metric-namespace-000.cpu",
+				"service-00.server-000.metric-namespace-001.cpu",
+				"service-00.server-000.metric-namespace-002.cpu",
+			},
+		},
+		{
+			input: commonFiles,
+			query: "service-00.server-00[0-2].metric-namespace-00[0-2].cpu",
+			expect: []string{
+				"service-00.server-000.metric-namespace-000.cpu",
+				"service-00.server-000.metric-namespace-001.cpu",
+				"service-00.server-000.metric-namespace-002.cpu",
+				"service-00.server-001.metric-namespace-002.cpu",
+			},
+		},
 		{
 			input: commonFiles,
 			query: "service-01.server-1[0-2]0.metric-namespace-007.cpu",
@@ -169,446 +169,446 @@ func TestTrieIndex(t *testing.T) {
 				"service-01.server-120.metric-namespace-007.cpu",
 			},
 		},
-		// {
-		// 	input: commonFiles,
-		// 	query: "service-01.server-1[0-5][4-5a-z].metric-namespace-007.cpu",
-		// 	expect: []string{
-		// 		"service-01.server-114.metric-namespace-007.cpu",
-		// 		"service-01.server-125.metric-namespace-007.cpu",
-		// 		"service-01.server-12a.metric-namespace-007.cpu",
-		// 	},
-		// },
-		// {
-		// 	input: commonFiles,
-		// 	query: "service-01.server-1[1]4.metric-namespace-007.cpu",
-		// 	expect: []string{
-		// 		"service-01.server-114.metric-namespace-007.cpu",
-		// 	},
-		// },
-		// {
-		// 	input: commonFiles,
-		// 	query: "service-01.server-1[0-2][4-5].metric-namespace-007.cpu",
-		// 	expect: []string{
-		// 		"service-01.server-114.metric-namespace-007.cpu",
-		// 		"service-01.server-125.metric-namespace-007.cpu",
-		// 	},
-		// },
-		// {
-		// 	input: []string{
-		// 		"/service-01/server-114/metric-namespace-007/cpu.wsp",
-		// 		"/service-01/server-125/metric-namespace-007/cpu.wsp",
-		// 		"/service-01/server-125/metric-namespace-006/cpu.wsp",
-		// 		"/service-01/server-111/metric-namespace-007/cpu.wsp",
-		// 		"/service-01/server-11a/metric-namespace-007/cpu.wsp",
-		// 		"/service-01/something-125/metric-namespace-007/cpu.wsp",
-		// 	},
-		// 	query: "service-01.server-1[0-2][^4-5].metric-namespace-007.cpu",
-		// 	expect: []string{
-		// 		"service-01.server-111.metric-namespace-007.cpu",
-		// 		"service-01.server-11a.metric-namespace-007.cpu",
-		// 	},
-		// },
-		// {
-		// 	input: commonFiles,
-		// 	query: "service-01.server-1[0-2][4-5].metric-n[a-z]mesp[a-z1-9]ce-007.cpu",
-		// 	expect: []string{
-		// 		"service-01.server-114.metric-namespace-007.cpu",
-		// 		"service-01.server-125.metric-namespace-007.cpu",
-		// 		"service-01.server-125.metric-namespzce-007.cpu",
-		// 	},
-		// },
-		//
-		// {
-		// 	input: commonFiles,
-		// 	query: "service-00.*.metric-namespace-005.cpu",
-		// 	expect: []string{
-		// 		"service-00.server-000.metric-namespace-005.cpu",
-		// 		"service-00.server-001.metric-namespace-005.cpu",
-		// 		"service-00.server-002.metric-namespace-005.cpu",
-		// 	},
-		// },
-		//
-		// {
-		// 	input: commonFiles,
-		// 	query: "*",
-		// 	expect: []string{
-		// 		"service-00",
-		// 		"service-01",
-		// 		"something",
-		// 	},
-		// },
-		// {
-		// 	input: commonFiles,
-		// 	query: "",
-		// 	expect: []string{
-		// 		"service-00",
-		// 		"service-01",
-		// 		"something",
-		// 	},
-		// },
-		// {
-		// 	input: commonFiles,
-		// 	query: "\t",
-		// 	expect: []string{
-		// 		"service-00",
-		// 		"service-01",
-		// 		"something",
-		// 	},
-		// },
-		// {
-		// 	input: commonFiles,
-		// 	query: " ",
-		// 	expect: []string{
-		// 		"service-00",
-		// 		"service-01",
-		// 		"something",
-		// 	},
-		// },
-		// {
-		// 	input: append(commonFiles,
-		// 		"/ooo/abc.wsp",
-		// 		"/ooo/abc/xxx.wsp",
-		// 		"/ooo/abd/xxx.wsp",
-		// 		"/ooo/ab/xxx.wsp",
-		// 		"/ooo/abcd/xxx.wsp",
-		// 		"/ooo/xyz/xxx.wsp",
-		// 		"/ooo/xy/xxx.wsp",
-		// 	),
-		// 	query: "*.*",
-		// 	expect: []string{
-		// 		"ooo.ab",
-		// 		"ooo.abc",
-		// 		"ooo.abc",
-		// 		"ooo.abcd",
-		// 		"ooo.abd",
-		// 		"ooo.xy",
-		// 		"ooo.xyz",
-		// 		"service-00.server-000",
-		// 		"service-00.server-001",
-		// 		"service-00.server-002",
-		// 		"service-01.server-000",
-		// 		"service-01.server-110",
-		// 		"service-01.server-114",
-		// 		"service-01.server-120",
-		// 		"service-01.server-125",
-		// 		"service-01.server-12a",
-		// 		"service-01.server-149",
-		// 		"service-01.server-170",
-		// 		"something.else",
-		// 	},
-		// },
-		// {
-		// 	// case 1:
-		// 	// 	abc . xxx
-		// 	// 	ab  . xxx
-		// 	// case 2:
-		// 	// 	ab  . xxx
-		// 	// 	abc . xxx
-		// 	// case 3:
-		// 	// 	abc . xxx
-		// 	// 	abc . xxx
-		// 	// case 4:
-		// 	// 	abc . xxx
-		// 	// 	xyz . xxx
-		// 	// case 5:
-		// 	// 	abc . xxx
-		// 	// 	acc . xxx
-		// 	// case 6:
-		// 	//  abc . xxx
-		// 	//  abd . xxx
-		// 	// case 7:
-		// 	//  abc  . xxx
-		// 	//  abde . xxx
-		// 	input: append(commonFiles,
-		// 		"/ooo/abc/xxx.wsp",
-		// 		"/ooo/ab/xxx.wsp",
-		// 	),
-		// 	query: "*.*.*",
-		// 	expect: []string{
-		// 		"ooo.ab.xxx",
-		// 		"ooo.abc.xxx",
-		// 		"service-00.server-000.metric-namespace-000",
-		// 		"service-00.server-000.metric-namespace-001",
-		// 		"service-00.server-000.metric-namespace-002",
-		// 		"service-00.server-000.metric-namespace-005",
-		// 		"service-00.server-001.metric-namespace-002",
-		// 		"service-00.server-001.metric-namespace-005",
-		// 		"service-00.server-002.metric-namespace-003",
-		// 		"service-00.server-002.metric-namespace-004",
-		// 		"service-00.server-002.metric-namespace-005",
-		// 		"service-01.server-000.metric-namespace-004",
-		// 		"service-01.server-000.metric-namespace-005",
-		// 		"service-01.server-110.metric-namespace-007",
-		// 		"service-01.server-114.metric-namespace-007",
-		// 		"service-01.server-120.metric-namespace-007",
-		// 		"service-01.server-125.metric-namespace-007",
-		// 		"service-01.server-125.metric-namespzce-007",
-		// 		"service-01.server-12a.metric-namespace-007",
-		// 		"service-01.server-149.metric-namespace-007",
-		// 		"service-01.server-170.metric-namespace-004-007-xdp",
-		// 		"service-01.server-170.metric-namespace-006-xdp",
-		// 		"service-01.server-170.metric-namespace-007",
-		// 		"service-01.server-170.metric-namespace-007-005-xdp",
-		// 		"service-01.server-170.metric-namespace-007-007-xdp",
-		// 		"service-01.server-170.metric-namespace-007-008-xdp",
-		// 		"something.else.server",
-		// 	},
-		// },
-		// {
-		// 	input: commonFiles,
-		// 	query: "service-0*.*.metric-namespace-005.cpu",
-		// 	expect: []string{
-		// 		"service-00.server-000.metric-namespace-005.cpu",
-		// 		"service-00.server-001.metric-namespace-005.cpu",
-		// 		"service-00.server-002.metric-namespace-005.cpu",
-		// 		"service-01.server-000.metric-namespace-005.cpu",
-		// 	},
-		// },
-		// {
-		// 	input: commonFiles,
-		// 	query: "service-0*.*.metric-*-00[5-7].cpu",
-		// 	expect: []string{
-		// 		"service-00.server-000.metric-namespace-005.cpu",
-		// 		"service-00.server-001.metric-namespace-005.cpu",
-		// 		"service-00.server-002.metric-namespace-005.cpu",
-		// 		"service-01.server-000.metric-namespace-005.cpu",
-		// 		"service-01.server-110.metric-namespace-007.cpu",
-		// 		"service-01.server-114.metric-namespace-007.cpu",
-		// 		"service-01.server-120.metric-namespace-007.cpu",
-		// 		"service-01.server-125.metric-namespace-007.cpu",
-		// 		"service-01.server-125.metric-namespzce-007.cpu",
-		// 		"service-01.server-12a.metric-namespace-007.cpu",
-		// 		"service-01.server-149.metric-namespace-007.cpu",
-		// 		"service-01.server-170.metric-namespace-007.cpu",
-		// 	},
-		// },
-		// {
-		// 	input: commonFiles,
-		// 	query: "service-0*.*.metric-*-00[5-7]-xdp.cpu",
-		// 	expect: []string{
-		// 		"service-01.server-170.metric-namespace-004-007-xdp.cpu",
-		// 		"service-01.server-170.metric-namespace-006-xdp.cpu",
-		// 		"service-01.server-170.metric-namespace-007-005-xdp.cpu",
-		// 		"service-01.server-170.metric-namespace-007-007-xdp.cpu",
-		// 	},
-		// },
-		// {
-		// 	input: commonFiles,
-		// 	query: "service-0*.*.{metric-namespace-004-007-xdp,metric-namespace-007-007-xdp}.cpu",
-		// 	expect: []string{
-		// 		"service-01.server-170.metric-namespace-004-007-xdp.cpu",
-		// 		"service-01.server-170.metric-namespace-007-007-xdp.cpu",
-		// 	},
-		// },
-		// {
-		// 	input: commonFiles,
-		// 	query: "service-0*.*.metric-namespace-{{004,007}}{-007}-xdp.cpu",
-		// 	expect: []string{
-		// 		"service-01.server-170.metric-namespace-004-007-xdp.cpu",
-		// 		"service-01.server-170.metric-namespace-007-007-xdp.cpu",
-		// 	},
-		// },
-		// {
-		// 	// reason: should no panic over bad queries
-		// 	input:    commonFiles,
-		// 	query:    "service-01.server-170.metric-namespace-004-007-xdp.cp[u",
-		// 	hasError: true,
-		// },
-		// {
-		// 	input: []string{
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_3xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_5xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_4xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/tcp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/udp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/backend/random-404_xoxo/http_xxx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/os/random-404_xoxo/http_xxx.wsp",
-		// 	},
-		// 	query: "services.groups.*.*.nginx.type.*.{{frontend,backend},os}.random-404_xoxo.http*",
-		// 	expect: []string{
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.backend.random-404_xoxo.http_xxx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_3xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_4xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_5xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_other",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.os.random-404_xoxo.http_xxx",
-		// 	},
-		// },
-		// {
-		// 	input: []string{
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_3xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_5xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_4xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/tcp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/udp.wsp",
-		// 	},
-		// 	query: "services.groups.*.*.nginx.type.*.frontend.random-404_xoxo.http*",
-		// 	expect: []string{
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_3xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_4xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_5xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_other",
-		// 	},
-		// },
-		// {
-		// 	input: []string{
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_3xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_5xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_4xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/tcp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/udp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/udp.wsp",
-		// 	},
-		// 	query: "services.groups.*.*.nginx.type.*.frontend.{random-404_xoxo,random.404.xoxo}.http*",
-		// 	expect: []string{
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_3xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_4xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_5xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_other",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random.404.xoxo.http_other",
-		// 	},
-		// },
-		// {
-		// 	input: []string{
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_3xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_5xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_4xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-403_xoxo/http_4xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/tcp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/udp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/401/xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/udp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/403/xoxo/udp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/4044/xoxo/http.wsp",
-		// 	},
-		// 	query: "services.groups.*.*.nginx.type.*.frontend.{random-40?_xoxo,random.40?.xoxo}.http*",
-		// 	expect: []string{
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-403_xoxo.http_4xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_3xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_4xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_5xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_other",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random.401.xoxo.http_other",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random.404.xoxo.http_other",
-		// 	},
-		// },
-		// {
-		// 	input: []string{
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_3xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_5xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_4xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-403_xoxo/http_4xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/tcp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/udp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/401/xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/udp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/403/xoxo/udp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/4044/xoxo/http.wsp",
-		// 	},
-		// 	query: "services.groups.*.*.nginx.type.*.frontend.{random-40?_xoxo,random.40?.xoxo}.http_[^5]*",
-		// 	expect: []string{
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-403_xoxo.http_4xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_3xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_4xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_other",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random.401.xoxo.http_other",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random.404.xoxo.http_other",
-		// 	},
-		// },
-		// {
-		// 	input: []string{
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_3xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-403_xoxo/http_5xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_4xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-403_xoxo/http_4xx.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/tcp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/udp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/401/xoxo/http_other.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/udp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/403/xoxo/udp.wsp",
-		// 		"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/4044/xoxo/http.wsp",
-		// 	},
-		// 	query: "services.groups.*.*.nginx.type.*.frontend.*404_xoxo.http*",
-		// 	expect: []string{
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_3xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_4xx",
-		// 		"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_other",
-		// 	},
-		// },
-		// {
-		// 	input: []string{
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-1018_main7_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-1019_main7_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-1020_main7_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-2022_expr1_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/mno-2022_expr1_internet_com/traffic.wsp",
-		// 	},
-		// 	query: "fe.series.*.*.haproxy.host.*cjk-*_internet_com.traffic",
-		// 	expect: []string{
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-1018_main7_internet_com.traffic",
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-1019_main7_internet_com.traffic",
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-1020_main7_internet_com.traffic",
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-2022_expr1_internet_com.traffic",
-		// 	},
-		// },
-		// {
-		// 	input: []string{
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-1018_main7_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-1019_main7_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-1020_main7_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-2022_expr1_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/mno-2022_expr1_internet_com/traffic.wsp",
-		// 	},
-		// 	query: "fe.series.*.*...haproxy.host.*cjk-*_internet_com.traffic",
-		// 	expect: []string{
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-1018_main7_internet_com.traffic",
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-1019_main7_internet_com.traffic",
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-1020_main7_internet_com.traffic",
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-2022_expr1_internet_com.traffic",
-		// 	},
-		// },
-		// {
-		// 	input: []string{
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-1018_main7_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-1019_main7_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-1020_main7_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-2022_expr1_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/mno-2022_expr1_internet_com/traffic.wsp",
-		// 	},
-		// 	query: "fe.series.*.*.haproxy.host.*cjk-*_internet_com.traffic.",
-		// 	expect: []string{
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-1018_main7_internet_com.traffic",
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-1019_main7_internet_com.traffic",
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-1020_main7_internet_com.traffic",
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-2022_expr1_internet_com.traffic",
-		// 	},
-		// },
-		// {
-		// 	input: []string{
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-1018_main7_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-1019_main7_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-1020_main7_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/cjk-2022_expr1_internet_com/traffic.wsp",
-		// 		"/fe/series/abc_101/xyz/haproxy/host/mno-2022_expr1_internet_com/traffic.wsp",
-		// 	},
-		// 	query: "...fe.series.*.*.haproxy.host.*cjk-*_internet_com.traffic",
-		// 	expect: []string{
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-1018_main7_internet_com.traffic",
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-1019_main7_internet_com.traffic",
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-1020_main7_internet_com.traffic",
-		// 		"fe.series.abc_101.xyz.haproxy.host.cjk-2022_expr1_internet_com.traffic",
-		// 	},
-		// },
+		{
+			input: commonFiles,
+			query: "service-01.server-1[0-5][4-5a-z].metric-namespace-007.cpu",
+			expect: []string{
+				"service-01.server-114.metric-namespace-007.cpu",
+				"service-01.server-125.metric-namespace-007.cpu",
+				"service-01.server-12a.metric-namespace-007.cpu",
+			},
+		},
+		{
+			input: commonFiles,
+			query: "service-01.server-1[1]4.metric-namespace-007.cpu",
+			expect: []string{
+				"service-01.server-114.metric-namespace-007.cpu",
+			},
+		},
+		{
+			input: commonFiles,
+			query: "service-01.server-1[0-2][4-5].metric-namespace-007.cpu",
+			expect: []string{
+				"service-01.server-114.metric-namespace-007.cpu",
+				"service-01.server-125.metric-namespace-007.cpu",
+			},
+		},
+		{
+			input: []string{
+				"/service-01/server-114/metric-namespace-007/cpu.wsp",
+				"/service-01/server-125/metric-namespace-007/cpu.wsp",
+				"/service-01/server-125/metric-namespace-006/cpu.wsp",
+				"/service-01/server-111/metric-namespace-007/cpu.wsp",
+				"/service-01/server-11a/metric-namespace-007/cpu.wsp",
+				"/service-01/something-125/metric-namespace-007/cpu.wsp",
+			},
+			query: "service-01.server-1[0-2][^4-5].metric-namespace-007.cpu",
+			expect: []string{
+				"service-01.server-111.metric-namespace-007.cpu",
+				"service-01.server-11a.metric-namespace-007.cpu",
+			},
+		},
+		{
+			input: commonFiles,
+			query: "service-01.server-1[0-2][4-5].metric-n[a-z]mesp[a-z1-9]ce-007.cpu",
+			expect: []string{
+				"service-01.server-114.metric-namespace-007.cpu",
+				"service-01.server-125.metric-namespace-007.cpu",
+				"service-01.server-125.metric-namespzce-007.cpu",
+			},
+		},
+
+		{
+			input: commonFiles,
+			query: "service-00.*.metric-namespace-005.cpu",
+			expect: []string{
+				"service-00.server-000.metric-namespace-005.cpu",
+				"service-00.server-001.metric-namespace-005.cpu",
+				"service-00.server-002.metric-namespace-005.cpu",
+			},
+		},
+
+		{
+			input: commonFiles,
+			query: "*",
+			expect: []string{
+				"service-00",
+				"service-01",
+				"something",
+			},
+		},
+		{
+			input: commonFiles,
+			query: "",
+			expect: []string{
+				"service-00",
+				"service-01",
+				"something",
+			},
+		},
+		{
+			input: commonFiles,
+			query: "\t",
+			expect: []string{
+				"service-00",
+				"service-01",
+				"something",
+			},
+		},
+		{
+			input: commonFiles,
+			query: " ",
+			expect: []string{
+				"service-00",
+				"service-01",
+				"something",
+			},
+		},
+		{
+			input: append(commonFiles,
+				"/ooo/abc.wsp",
+				"/ooo/abc/xxx.wsp",
+				"/ooo/abd/xxx.wsp",
+				"/ooo/ab/xxx.wsp",
+				"/ooo/abcd/xxx.wsp",
+				"/ooo/xyz/xxx.wsp",
+				"/ooo/xy/xxx.wsp",
+			),
+			query: "*.*",
+			expect: []string{
+				"ooo.ab",
+				"ooo.abc",
+				"ooo.abc",
+				"ooo.abcd",
+				"ooo.abd",
+				"ooo.xy",
+				"ooo.xyz",
+				"service-00.server-000",
+				"service-00.server-001",
+				"service-00.server-002",
+				"service-01.server-000",
+				"service-01.server-110",
+				"service-01.server-114",
+				"service-01.server-120",
+				"service-01.server-125",
+				"service-01.server-12a",
+				"service-01.server-149",
+				"service-01.server-170",
+				"something.else",
+			},
+		},
+		{
+			// case 1:
+			// 	abc . xxx
+			// 	ab  . xxx
+			// case 2:
+			// 	ab  . xxx
+			// 	abc . xxx
+			// case 3:
+			// 	abc . xxx
+			// 	abc . xxx
+			// case 4:
+			// 	abc . xxx
+			// 	xyz . xxx
+			// case 5:
+			// 	abc . xxx
+			// 	acc . xxx
+			// case 6:
+			//  abc . xxx
+			//  abd . xxx
+			// case 7:
+			//  abc  . xxx
+			//  abde . xxx
+			input: append(commonFiles,
+				"/ooo/abc/xxx.wsp",
+				"/ooo/ab/xxx.wsp",
+			),
+			query: "*.*.*",
+			expect: []string{
+				"ooo.ab.xxx",
+				"ooo.abc.xxx",
+				"service-00.server-000.metric-namespace-000",
+				"service-00.server-000.metric-namespace-001",
+				"service-00.server-000.metric-namespace-002",
+				"service-00.server-000.metric-namespace-005",
+				"service-00.server-001.metric-namespace-002",
+				"service-00.server-001.metric-namespace-005",
+				"service-00.server-002.metric-namespace-003",
+				"service-00.server-002.metric-namespace-004",
+				"service-00.server-002.metric-namespace-005",
+				"service-01.server-000.metric-namespace-004",
+				"service-01.server-000.metric-namespace-005",
+				"service-01.server-110.metric-namespace-007",
+				"service-01.server-114.metric-namespace-007",
+				"service-01.server-120.metric-namespace-007",
+				"service-01.server-125.metric-namespace-007",
+				"service-01.server-125.metric-namespzce-007",
+				"service-01.server-12a.metric-namespace-007",
+				"service-01.server-149.metric-namespace-007",
+				"service-01.server-170.metric-namespace-004-007-xdp",
+				"service-01.server-170.metric-namespace-006-xdp",
+				"service-01.server-170.metric-namespace-007",
+				"service-01.server-170.metric-namespace-007-005-xdp",
+				"service-01.server-170.metric-namespace-007-007-xdp",
+				"service-01.server-170.metric-namespace-007-008-xdp",
+				"something.else.server",
+			},
+		},
+		{
+			input: commonFiles,
+			query: "service-0*.*.metric-namespace-005.cpu",
+			expect: []string{
+				"service-00.server-000.metric-namespace-005.cpu",
+				"service-00.server-001.metric-namespace-005.cpu",
+				"service-00.server-002.metric-namespace-005.cpu",
+				"service-01.server-000.metric-namespace-005.cpu",
+			},
+		},
+		{
+			input: commonFiles,
+			query: "service-0*.*.metric-*-00[5-7].cpu",
+			expect: []string{
+				"service-00.server-000.metric-namespace-005.cpu",
+				"service-00.server-001.metric-namespace-005.cpu",
+				"service-00.server-002.metric-namespace-005.cpu",
+				"service-01.server-000.metric-namespace-005.cpu",
+				"service-01.server-110.metric-namespace-007.cpu",
+				"service-01.server-114.metric-namespace-007.cpu",
+				"service-01.server-120.metric-namespace-007.cpu",
+				"service-01.server-125.metric-namespace-007.cpu",
+				"service-01.server-125.metric-namespzce-007.cpu",
+				"service-01.server-12a.metric-namespace-007.cpu",
+				"service-01.server-149.metric-namespace-007.cpu",
+				"service-01.server-170.metric-namespace-007.cpu",
+			},
+		},
+		{
+			input: commonFiles,
+			query: "service-0*.*.metric-*-00[5-7]-xdp.cpu",
+			expect: []string{
+				"service-01.server-170.metric-namespace-004-007-xdp.cpu",
+				"service-01.server-170.metric-namespace-006-xdp.cpu",
+				"service-01.server-170.metric-namespace-007-005-xdp.cpu",
+				"service-01.server-170.metric-namespace-007-007-xdp.cpu",
+			},
+		},
+		{
+			input: commonFiles,
+			query: "service-0*.*.{metric-namespace-004-007-xdp,metric-namespace-007-007-xdp}.cpu",
+			expect: []string{
+				"service-01.server-170.metric-namespace-004-007-xdp.cpu",
+				"service-01.server-170.metric-namespace-007-007-xdp.cpu",
+			},
+		},
+		{
+			input: commonFiles,
+			query: "service-0*.*.metric-namespace-{{004,007}}{-007}-xdp.cpu",
+			expect: []string{
+				"service-01.server-170.metric-namespace-004-007-xdp.cpu",
+				"service-01.server-170.metric-namespace-007-007-xdp.cpu",
+			},
+		},
+		{
+			// reason: should no panic over bad queries
+			input:    commonFiles,
+			query:    "service-01.server-170.metric-namespace-004-007-xdp.cp[u",
+			hasError: true,
+		},
+		{
+			input: []string{
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_3xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_5xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_4xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/tcp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/udp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/backend/random-404_xoxo/http_xxx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/os/random-404_xoxo/http_xxx.wsp",
+			},
+			query: "services.groups.*.*.nginx.type.*.{{frontend,backend},os}.random-404_xoxo.http*",
+			expect: []string{
+				"services.groups.xyz.xxx_404.nginx.type.prod.backend.random-404_xoxo.http_xxx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_3xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_4xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_5xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_other",
+				"services.groups.xyz.xxx_404.nginx.type.prod.os.random-404_xoxo.http_xxx",
+			},
+		},
+		{
+			input: []string{
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_3xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_5xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_4xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/tcp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/udp.wsp",
+			},
+			query: "services.groups.*.*.nginx.type.*.frontend.random-404_xoxo.http*",
+			expect: []string{
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_3xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_4xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_5xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_other",
+			},
+		},
+		{
+			input: []string{
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_3xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_5xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_4xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/tcp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/udp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/udp.wsp",
+			},
+			query: "services.groups.*.*.nginx.type.*.frontend.{random-404_xoxo,random.404.xoxo}.http*",
+			expect: []string{
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_3xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_4xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_5xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_other",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random.404.xoxo.http_other",
+			},
+		},
+		{
+			input: []string{
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_3xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_5xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_4xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-403_xoxo/http_4xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/tcp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/udp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/401/xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/udp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/403/xoxo/udp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/4044/xoxo/http.wsp",
+			},
+			query: "services.groups.*.*.nginx.type.*.frontend.{random-40?_xoxo,random.40?.xoxo}.http*",
+			expect: []string{
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-403_xoxo.http_4xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_3xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_4xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_5xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_other",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random.401.xoxo.http_other",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random.404.xoxo.http_other",
+			},
+		},
+		{
+			input: []string{
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_3xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_5xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_4xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-403_xoxo/http_4xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/tcp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/udp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/401/xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/udp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/403/xoxo/udp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/4044/xoxo/http.wsp",
+			},
+			query: "services.groups.*.*.nginx.type.*.frontend.{random-40?_xoxo,random.40?.xoxo}.http_[^5]*",
+			expect: []string{
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-403_xoxo.http_4xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_3xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_4xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_other",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random.401.xoxo.http_other",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random.404.xoxo.http_other",
+			},
+		},
+		{
+			input: []string{
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_3xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-403_xoxo/http_5xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/http_4xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-403_xoxo/http_4xx.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/tcp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random-404_xoxo/udp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/401/xoxo/http_other.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/404/xoxo/udp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/403/xoxo/udp.wsp",
+				"/services/groups/xyz/xxx_404/nginx/type/prod/frontend/random/4044/xoxo/http.wsp",
+			},
+			query: "services.groups.*.*.nginx.type.*.frontend.*404_xoxo.http*",
+			expect: []string{
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_3xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_4xx",
+				"services.groups.xyz.xxx_404.nginx.type.prod.frontend.random-404_xoxo.http_other",
+			},
+		},
+		{
+			input: []string{
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-1018_main7_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-1019_main7_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-1020_main7_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-2022_expr1_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/mno-2022_expr1_internet_com/traffic.wsp",
+			},
+			query: "fe.series.*.*.haproxy.host.*cjk-*_internet_com.traffic",
+			expect: []string{
+				"fe.series.abc_101.xyz.haproxy.host.cjk-1018_main7_internet_com.traffic",
+				"fe.series.abc_101.xyz.haproxy.host.cjk-1019_main7_internet_com.traffic",
+				"fe.series.abc_101.xyz.haproxy.host.cjk-1020_main7_internet_com.traffic",
+				"fe.series.abc_101.xyz.haproxy.host.cjk-2022_expr1_internet_com.traffic",
+			},
+		},
+		{
+			input: []string{
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-1018_main7_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-1019_main7_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-1020_main7_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-2022_expr1_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/mno-2022_expr1_internet_com/traffic.wsp",
+			},
+			query: "fe.series.*.*...haproxy.host.*cjk-*_internet_com.traffic",
+			expect: []string{
+				"fe.series.abc_101.xyz.haproxy.host.cjk-1018_main7_internet_com.traffic",
+				"fe.series.abc_101.xyz.haproxy.host.cjk-1019_main7_internet_com.traffic",
+				"fe.series.abc_101.xyz.haproxy.host.cjk-1020_main7_internet_com.traffic",
+				"fe.series.abc_101.xyz.haproxy.host.cjk-2022_expr1_internet_com.traffic",
+			},
+		},
+		{
+			input: []string{
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-1018_main7_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-1019_main7_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-1020_main7_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-2022_expr1_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/mno-2022_expr1_internet_com/traffic.wsp",
+			},
+			query: "fe.series.*.*.haproxy.host.*cjk-*_internet_com.traffic.",
+			expect: []string{
+				"fe.series.abc_101.xyz.haproxy.host.cjk-1018_main7_internet_com.traffic",
+				"fe.series.abc_101.xyz.haproxy.host.cjk-1019_main7_internet_com.traffic",
+				"fe.series.abc_101.xyz.haproxy.host.cjk-1020_main7_internet_com.traffic",
+				"fe.series.abc_101.xyz.haproxy.host.cjk-2022_expr1_internet_com.traffic",
+			},
+		},
+		{
+			input: []string{
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-1018_main7_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-1019_main7_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-1020_main7_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/cjk-2022_expr1_internet_com/traffic.wsp",
+				"/fe/series/abc_101/xyz/haproxy/host/mno-2022_expr1_internet_com/traffic.wsp",
+			},
+			query: "...fe.series.*.*.haproxy.host.*cjk-*_internet_com.traffic",
+			expect: []string{
+				"fe.series.abc_101.xyz.haproxy.host.cjk-1018_main7_internet_com.traffic",
+				"fe.series.abc_101.xyz.haproxy.host.cjk-1019_main7_internet_com.traffic",
+				"fe.series.abc_101.xyz.haproxy.host.cjk-1020_main7_internet_com.traffic",
+				"fe.series.abc_101.xyz.haproxy.host.cjk-2022_expr1_internet_com.traffic",
+			},
+		},
 	}
 
 	for _, c := range cases {

@@ -314,6 +314,7 @@ func (app *App) Start() (err error) {
 	conf := app.Config
 	// idxUptChan := make(chan carbonserver.MetricUpdate,1000)
 	idxUptChan := make(chan metrics.MetricUpdate,1000)
+	fmt.Fprintln(os.Stderr, "******=====****** created new indexupdate channel in APP.go")
 
 
 	runtime.GOMAXPROCS(conf.Common.MaxCPU)
@@ -327,6 +328,7 @@ func (app *App) Start() (err error) {
 
 	fWalk := metrics.NewFileScan(idxUptChan, conf.Carbonserver.ScanFrequency.Value(),conf.Whisper.DataDir)
 	go fWalk.RunFileWalk(app.forceScan,app.exit)
+	fmt.Fprintln(os.Stderr, "******=====****** called go routine on filewalk")
 	app.forceScan <- struct{}{}
 
 

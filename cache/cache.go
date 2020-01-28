@@ -246,6 +246,7 @@ func (c *Cache) DivertToXlog(w io.Writer) {
 // }
 
 func (c *Cache) sendToIdxUptChan(newMetric string) {
+	isexample := strings.HasPrefix(newMetric,"example")
 	split := strings.Split(newMetric, ".")
   name := "/"
   for i, seg := range split {
@@ -258,12 +259,16 @@ func (c *Cache) sendToIdxUptChan(newMetric string) {
 				Name: name,
 				Operation: metrics.ADD,
 			}
-			fmt.Println("******=====****** ADD operation in CACHE ;sending this info to channel - ", name )
+			// fmt.Println("******=====****** ADD operation in CACHE ;sending this info to channel - ", name )
 			// c.idxUpdateChan <-  newMetric
 			// for{
 				select {
 				case c.idxUpdateChan <-  newMetric:
+					if isexample {
+						fmt.Println("******=====****** ADD operation in CACHE ;sending this info to channel - ", name )
+					}
 				default:
+					fmt.Println( "******=====****** index update channel is full in cache")
 					panic(fmt.Sprintf("index update channel is full, dropping this metric - %v",newMetric.Name))
 				}
 			// }
