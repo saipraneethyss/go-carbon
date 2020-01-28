@@ -181,7 +181,7 @@ func (fScan *FileScan) fileWalkHelper() {
 		// FileWalkInfo: currWalk,
     FileWalkInfo: &FileWalkResp{
   		Details:    currWalk.Details,
-  		WhisperDir: currWalk.WhisperDir,
+  		// WhisperDir: currWalk.WhisperDir,
   	},
 	}
 }

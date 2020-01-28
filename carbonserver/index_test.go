@@ -96,6 +96,7 @@ func getTestInfo(dir string) *testInfo {
   carbonserver := NewCarbonserverListener(c.Get,indexUptChan,getMetricRetentionAggregation)
   carbonserver.whisperData = dir
 	carbonserver.trieIndex = true
+	carbonserver.scanFrequency = 3 * time.Second
   carbonserver.logger = zap.NewNop()
   carbonserver.metrics = &metricStruct{}
   carbonserver.exitChan = make(chan struct{})

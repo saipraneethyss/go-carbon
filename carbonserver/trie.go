@@ -335,7 +335,6 @@ func newTrie(fileExt string) *trieIndex {
 // abc.daf2.ghi
 // efg.cjk
 func (ti *trieIndex) insert(path string) error {
-	fmt.Println("Inserting - ",path)
 	path = filepath.Clean(path)
 	if len(path) > 0 && path[0] == '/' {
 		path = path[1:]

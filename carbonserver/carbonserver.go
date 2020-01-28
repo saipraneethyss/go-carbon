@@ -245,6 +245,7 @@ type CarbonserverListener struct {
 	failOnMaxGlobs    bool
 	percentiles       []int
 	scanFrequency     time.Duration
+	fileScanFrequency time.Duration
 	forceScanChan     chan struct{}
 	persisterMatch    func(key string) (*persister.Schema, *persister.WhisperAggregationItem)
 	metricsAsCounters bool

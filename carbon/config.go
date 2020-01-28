@@ -105,7 +105,8 @@ type carbonserverConfig struct {
 	ReadTimeout       *Duration `toml:"read-timeout"`
 	IdleTimeout       *Duration `toml:"idle-timeout"`
 	WriteTimeout      *Duration `toml:"write-timeout"`
-	ScanFrequency     *Duration `toml:"scan-frequency"`
+	IdxScanFrequency  *Duration `toml:"idx-scan-frequency"`
+	FileScanFrequency *Duration `toml:"file-scan-frequency"`
 	QueryCacheEnabled bool      `toml:"query-cache-enabled"`
 	QueryCacheSizeMB  int       `toml:"query-cache-size-mb"`
 	FindCacheEnabled  bool      `toml:"find-cache-enabled"`
@@ -202,7 +203,10 @@ func NewConfig() *Config {
 			MaxGlobs:          100,
 			FailOnMaxGlobs:    false,
 			MetricsAsCounters: false,
-			ScanFrequency: &Duration{
+			IdxScanFrequency: &Duration{
+				Duration: 60 * time.Second,
+			},
+			FileScanFrequency: &Duration{
 				Duration: 300 * time.Second,
 			},
 			ReadTimeout: &Duration{

@@ -326,7 +326,7 @@ func (app *App) Start() (err error) {
 
 	app.Cache = core
 
-	fWalk := metrics.NewFileScan(idxUptChan, conf.Carbonserver.ScanFrequency.Value(),conf.Whisper.DataDir)
+	fWalk := metrics.NewFileScan(idxUptChan, conf.Carbonserver.FileScanFrequency.Value(),conf.Whisper.DataDir)
 	go fWalk.RunFileWalk(app.forceScan,app.exit)
 	fmt.Fprintln(os.Stderr, "******=====****** called go routine on filewalk")
 	app.forceScan <- struct{}{}
@@ -443,7 +443,7 @@ func (app *App) Start() (err error) {
 		carbonserver.SetMaxMetricsRendered(conf.Carbonserver.MaxMetricsRendered)
 		carbonserver.SetBuckets(conf.Carbonserver.Buckets)
 		carbonserver.SetMetricsAsCounters(conf.Carbonserver.MetricsAsCounters)
-		carbonserver.SetScanFrequency(conf.Carbonserver.ScanFrequency.Value())
+		carbonserver.SetScanFrequency(conf.Carbonserver.IdxScanFrequency.Value())
 		carbonserver.SetReadTimeout(conf.Carbonserver.ReadTimeout.Value())
 		carbonserver.SetIdleTimeout(conf.Carbonserver.IdleTimeout.Value())
 		carbonserver.SetWriteTimeout(conf.Carbonserver.WriteTimeout.Value())

@@ -36,7 +36,7 @@ import (
 
 type indexInfo struct {
 	helper.Stoppable
-	scan          <-chan time.Time
+	indexScan     <-chan time.Time
 	csListener    *CarbonserverListener
 	metricsMap    map[string]struct{}
 	idxUpdateChan chan metrics.MetricUpdate
@@ -61,12 +61,13 @@ type fileIndex struct {
 func (listener *CarbonserverListener) indexUpdater() *indexInfo {
 	return &indexInfo{
 		// Config variables
-		scan:          time.Tick(listener.scanFrequency),
+		indexScan:     time.Tick(listener.scanFrequency),
 		csListener:    listener,
 		idxUpdateChan: listener.indexUpdateChan,
 		metricsMap:    make(map[string]struct{}),
 		fileWalkInfo: &metrics.FileWalkResp{
 			Details: make(map[string]*protov3.MetricDetails),
+			WhisperDir: listener.whisperData,
 		},
 	}
 }
@@ -113,6 +114,12 @@ func (indexUpdater *indexInfo) updateIndex() {
 		case <-indexUpdater.csListener.exitChan:
 			fmt.Fprintln(os.Stderr, "*************** exit case")
 			return
+		case <-indexUpdater.indexScan:
+			//update files with metrics from cache ADDs
+			// fmt.Fprintln(os.Stderr, "******=========***** len of current index :", len(indexUpdater.metricsMap))
+			fmt.Fprintln(os.Stderr, "****=========**** IndexUpdater hit indexScan frequency ")
+			indexUpdater.fileWalkInfo.Files = indexUpdater.metricsMap
+			indexUpdater.populateFileIndex()
 		case update := <-indexUpdater.idxUpdateChan:
 			// fmt.Fprintln(os.Stderr, "*************** current index :", indexUpdater.metricsMap)
 			switch update.Operation {
@@ -126,14 +133,9 @@ func (indexUpdater *indexInfo) updateIndex() {
 				// fmt.Fprintln(os.Stderr, "*************** IndexUpdater received DEL operation ")
 				delete(indexUpdater.metricsMap, update.Name)
 			case metrics.FLUSH:
-				// populate trie
+				// populate metrics Details
 				fmt.Fprintln(os.Stderr, "****=========**** IndexUpdater received FLUSH operation ")
-				// fmt.Fprintln(os.Stderr, "*************** current index :", indexUpdater.metricsMap)
-				fmt.Fprintln(os.Stderr, "******=========***** len of current index :", len(indexUpdater.metricsMap))
-				indexUpdater.fileWalkInfo = update.FileWalkInfo
-				//update files with metrics from cache ADDs
-				indexUpdater.fileWalkInfo.Files = indexUpdater.metricsMap
-				indexUpdater.populateFileIndex()
+				indexUpdater.fileWalkInfo.Details = update.FileWalkInfo.Details
 			}
 		}
 	}
