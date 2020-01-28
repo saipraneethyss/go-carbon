@@ -127,9 +127,9 @@ func (indexUpdater *indexInfo) updateIndex() {
 				delete(indexUpdater.metricsMap, update.Name)
 			case metrics.FLUSH:
 				// populate trie
-				fmt.Fprintln(os.Stderr, "*************** IndexUpdater received FLUSH operation ")
+				fmt.Fprintln(os.Stderr, "****=========**** IndexUpdater received FLUSH operation ")
 				// fmt.Fprintln(os.Stderr, "*************** current index :", indexUpdater.metricsMap)
-				fmt.Fprintln(os.Stderr, "*************** len of current index :", len(indexUpdater.metricsMap))
+				fmt.Fprintln(os.Stderr, "******=========***** len of current index :", len(indexUpdater.metricsMap))
 				indexUpdater.fileWalkInfo = update.FileWalkInfo
 				//update files with metrics from cache ADDs
 				indexUpdater.fileWalkInfo.Files = indexUpdater.metricsMap
@@ -256,7 +256,7 @@ func (indexUpdater *indexInfo) updateTrie(nfidx *fileIndex, infos []zap.Field, l
 				errs = append(errs, err)
 			}
 		}
-		fmt.Fprintln(os.Stderr, "========= trieIndex", nfidx.trieIdx)
+		fmt.Fprintln(os.Stderr, "========= depth of trieIndex", nfidx.trieIdx.depth)
 		infos = append(
 			infos,
 			zap.Int("trie_depth", nfidx.trieIdx.depth),

@@ -398,7 +398,7 @@ outer:
 				continue
 			}
 
-			if child.c[0] != path[start] {
+			if start < len(path) && child.c[0] != path[start] {
 				continue
 			}
 
@@ -862,7 +862,7 @@ func (ti *trieIndex) setTrigrams() {
 func (listener *CarbonserverListener) expandGlobsTrie(query string) ([]string, []bool, error) {
 	query = strings.Replace(query, ".", "/", -1)
 	globs := []string{query}
-
+	// fmt.Println("****=========**** received query for - ", query)
 	var slashInBraces, inAlter bool
 	for _, c := range query {
 		if c == '{' {
@@ -895,6 +895,8 @@ func (listener *CarbonserverListener) expandGlobsTrie(query string) ([]string, [
 		files = append(files, f...)
 		leafs = append(leafs, l...)
 	}
+
+	// fmt.Println("****=========**** files for query - ", query ,"  files - ",files," leafs - ",leafs)
 
 	return files, leafs, nil
 }
