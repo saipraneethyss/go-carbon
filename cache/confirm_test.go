@@ -9,7 +9,7 @@ import (
 
 func TestInFlight(t *testing.T) {
 	var data []points.Point
-	tChan := make(chan metrics.MetricUpdate,5)
+	tChan := make(chan metrics.MetricUpdate,10)
 	c := New(tChan)
 
 	c.Add(points.OnePoint("hello.world", 42, 10))

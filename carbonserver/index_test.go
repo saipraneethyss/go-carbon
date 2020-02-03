@@ -90,12 +90,13 @@ func getTestDir() (string, error) {
 }
 
 func getTestInfo(dir string) *testInfo {
-	scanTime := 3 * time.Second
+	scanTime := 1 * time.Second
 	indexUptChan := make(chan metrics.MetricUpdate, 100)
   c := cache.New(indexUptChan)
   carbonserver := NewCarbonserverListener(c.Get,indexUptChan,getMetricRetentionAggregation)
   carbonserver.whisperData = dir
-	carbonserver.trieIndex = true
+	carbonserver.trigramIndex = true
+	// carbonserver.trieIndex = true
 	carbonserver.scanFrequency = 3 * time.Second
   carbonserver.logger = zap.NewNop()
   carbonserver.metrics = &metricStruct{}
@@ -126,12 +127,6 @@ func (f *testInfo) checkexpandblobs(t *testing.T, query string){
 
     fmt.Println("************* the expanded globs - ",expandedGlobs[0])
 		fmt.Printf("************* expanded globs struct - %#v\n",expandedGlobs)
-
-    // file := expandedGlobs[0].Files[0]
-	// if file != query {
-  //       t.Errorf("files: '%v', epxected: '%s'\n", file, query)
-	// 	return
-	// }
 }
 
 func TestIndexUpdateOverChannel(t *testing.T) {
@@ -169,28 +164,34 @@ func TestIndexUpdateOverChannel(t *testing.T) {
   // go idxUpdater.updateIndex()
 
   //check expandblobs for new metrics
-	fmt.Println("querying expand blobs for file - ", addFiles[0])
-	f.checkexpandblobs(t,addFiles[0])
-	fmt.Println("querying expand blobs for cache only metric - ", addMetrics[2])
-  f.checkexpandblobs(t,addMetrics[2])
-	fmt.Println("querying expand blobs for cache only metric - ", addMetrics[0])
-  f.checkexpandblobs(t,addMetrics[0])
-	time.Sleep(5 * time.Second)
+	// fmt.Println("querying expand blobs for file - ", addFiles[0])
+	// f.checkexpandblobs(t,addFiles[0])
+	// fmt.Println("querying expand blobs for cache only metric - ", addMetrics[2])
+  // f.checkexpandblobs(t,addMetrics[2])
+	// fmt.Println("querying expand blobs for cache only metric - ", addMetrics[0])
+  // f.checkexpandblobs(t,addMetrics[0])
+	fmt.Println("====================> sleeping for 3 seonds")
+	time.Sleep(3 * time.Second)
+	fmt.Println("====================> slept for 3 seonds")
+
 
 	for _, filePath := range removeFiles {
+		fmt.Println("====================> deleting this file", filePath)
 		if err = removeFileFromDir(filePath, tmpDir); err != nil {
 			fmt.Errorf("error removing file from temp directory - %s\n error is: %v\n", filePath, err)
 			t.Fatal(err)
 		}
 	}
+	time.Sleep(2 * time.Second)
+
 	fmt.Println("querying expand blobs for file - path.to.file.name1")
-	f.checkexpandblobs(t,"path.to.file.name1")
+	f.checkexpandblobs(t,"path.to.file.nam*1")
 	fmt.Println("querying expand blobs for cache only metric - ", addMetrics[3])
-  f.checkexpandblobs(t,addMetrics[3])
-	fmt.Println("querying expand blobs for cache only metric - ", addMetrics[2])
-	f.checkexpandblobs(t,addMetrics[2])
-	fmt.Println("querying expand blobs for cache only metric - ", addMetrics[0])
-	f.checkexpandblobs(t,addMetrics[0])
+  f.checkexpandblobs(t,"new.data.poi*t1")
+	// fmt.Println("querying expand blobs for cache only metric - ", addMetrics[2])
+	// f.checkexpandblobs(t,addMetrics[2])
+	// fmt.Println("querying expand blobs for cache only metric - ", addMetrics[0])
+	// f.checkexpandblobs(t,addMetrics[0])
 	time.Sleep(2 * time.Second)
 	f.exitChan <- true
 

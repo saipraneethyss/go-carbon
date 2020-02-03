@@ -62,13 +62,13 @@ func (fScan *FileScan) RunFileWalk(forceChan <-chan struct{}, exitChan <-chan bo
 			fmt.Fprintln(os.Stderr, "!!!!!!!! EXIT CASE !!!!!!!!!")
 			return
 		case <-fScan.Scan:
-			fmt.Fprintln(os.Stderr, "******=====******  entered scan frequency")
+			fmt.Fprintln(os.Stderr, "******====================>  entered scan frequency")
 		case <-forceChan:
 			fmt.Fprintln(os.Stderr, "******=====******  entered forcescan")
 		}
-		fmt.Fprintln(os.Stderr, "******=====******  about to run filewalk")
+		fmt.Fprintln(os.Stderr, "******====================>  about to run filewalk")
 		fScan.fileWalkHelper()
-		fmt.Fprintln(os.Stderr, "******=====******  ran file walk")
+		fmt.Fprintln(os.Stderr, "******====================>  ran file walk")
 	}
 }
 
@@ -130,10 +130,10 @@ func (fScan *FileScan) fileWalkHelper() {
         select {
         case fScan.IdxUpdateChan  <-  newMetric:
           if isexample {
-            fmt.Fprintln(os.Stderr, "******=====****** ADD operation in FileWalk;sending this info to channel", trimmedName)
+            // fmt.Fprintln(os.Stderr, "******=====****** ADD operation in FileWalk;sending this info to channel", trimmedName)
           }
         default:
-          fmt.Fprintln(os.Stderr, "******=====****** index update channel is full in filewalk")
+          // fmt.Fprintln(os.Stderr, "******=====****** index update channel is full in filewalk")
           panic(fmt.Sprintf("index update channel is full in filewalk, dropping this metric - %v",newMetric.Name))
         }
 			}
@@ -174,7 +174,7 @@ func (fScan *FileScan) fileWalkHelper() {
 	}
 
 	fScan.FileWalkInfo = currWalk
-	fmt.Fprintln(os.Stderr, "******=====****** FLUSH operation;")
+	// fmt.Fprintln(os.Stderr, "******=====****** FLUSH operation;")
 	fScan.IdxUpdateChan <- MetricUpdate{
 		Name:         "",
 		Operation:    FLUSH,

@@ -18,7 +18,7 @@ const sampleCacheQuery3 = "\x00\x00\x00R\x80\x02}(U\x06metricX,\x00\x00\x00carbo
 
 func TestCarbonlink(t *testing.T) {
 	assert := assert.New(t)
-	tChan := make(chan metrics.MetricUpdate,5)
+	tChan := make(chan metrics.MetricUpdate,10)
 	cache := New(tChan)
 
 	msg1 := points.OnePoint(
@@ -166,7 +166,7 @@ func TestCarbonlink(t *testing.T) {
 
 func TestCarbonlinkErrors(t *testing.T) {
 	assert := assert.New(t)
-	tChan := make(chan metrics.MetricUpdate,5)
+	tChan := make(chan metrics.MetricUpdate,10)
 	cache := New(tChan)
 
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")

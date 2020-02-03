@@ -19,7 +19,7 @@ package carbonserver
 import (
 	"fmt"
 	_ "net/http/pprof"
-	"os"
+	// "os"
 	// "path/filepath"
 	// "strings"
 	"sync/atomic"
@@ -112,12 +112,12 @@ func (indexUpdater *indexInfo) updateIndex() {
 	for {
 		select {
 		case <-indexUpdater.csListener.exitChan:
-			fmt.Fprintln(os.Stderr, "*************** exit case")
+			// fmt.Fprintln(os.Stderr, "*************** exit case")
 			return
 		case <-indexUpdater.indexScan:
 			//update files with metrics from cache ADDs
-			// fmt.Fprintln(os.Stderr, "******=========***** len of current index :", len(indexUpdater.metricsMap))
-			fmt.Fprintln(os.Stderr, "****=========**** IndexUpdater hit indexScan frequency ")
+			fmt.Println("******=========***** len of current index :", len(indexUpdater.metricsMap))
+			fmt.Println( "****=======================> IndexUpdater hit indexScan frequency ")
 			indexUpdater.fileWalkInfo.Files = indexUpdater.metricsMap
 			indexUpdater.populateFileIndex()
 		case update := <-indexUpdater.idxUpdateChan:
@@ -125,16 +125,16 @@ func (indexUpdater *indexInfo) updateIndex() {
 			switch update.Operation {
 			case metrics.ADD:
 				// append to index
-				fmt.Fprintln(os.Stderr, "*************** IndexUpdater received ADD operation ")
+				// fmt.Fprintln(os.Stderr, "*************** IndexUpdater received ADD operation ")
 				indexUpdater.metricsMap[update.Name] = struct{}{}
 			case metrics.DEL:
 				//delete from index
 				// https://stackoverflow.com/a/1736032
-				// fmt.Fprintln(os.Stderr, "*************** IndexUpdater received DEL operation ")
+				fmt.Println("*************** IndexUpdater received DEL operation ")
 				delete(indexUpdater.metricsMap, update.Name)
 			case metrics.FLUSH:
 				// populate metrics Details
-				fmt.Fprintln(os.Stderr, "****=========**** IndexUpdater received FLUSH operation ")
+				// fmt.Fprintln(os.Stderr, "****=========**** IndexUpdater received FLUSH operation ")
 				indexUpdater.fileWalkInfo.Details = update.FileWalkInfo.Details
 			}
 		}
@@ -197,8 +197,8 @@ func (indexUpdater *indexInfo) runFileWalk(dir string) {
 */
 
 func (indexUpdater *indexInfo) populateFileIndex() {
-	fmt.Fprintln(os.Stderr, "========= reaches populateFileIndex")
-	logger := indexUpdater.csListener.logger.With(zap.String("handler", "fileListUpdated"))
+	// fmt.Fprintln(os.Stderr, "========= reaches populateFileIndex")
+	logger := indexUpdater.csListener.logger.With(zap.String("handler", "populateFileIndex"))
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Error("panic encountered",
@@ -244,7 +244,8 @@ func (indexUpdater *indexInfo) populateFileIndex() {
 
 func (indexUpdater *indexInfo) updateTrie(nfidx *fileIndex, infos []zap.Field, logger *zap.Logger) {
 	var pruned int
-	fmt.Fprintln(os.Stderr, "========= reaches updateTrie")
+	fmt.Println( "========= reaches updateTrie")
+	// fmt.Println("index files - ", indexUpdater.fileWalkInfo.Files,"\nle is - ", len(indexUpdater.fileWalkInfo.Files))
 	var indexType = "trigram"
 	t0 := time.Now()
 	// fmt.Fprintln(os.Stderr, "infos for now:", infos)
@@ -258,7 +259,7 @@ func (indexUpdater *indexInfo) updateTrie(nfidx *fileIndex, infos []zap.Field, l
 				errs = append(errs, err)
 			}
 		}
-		fmt.Fprintln(os.Stderr, "========= depth of trieIndex", nfidx.trieIdx.depth)
+		// fmt.Fprintln(os.Stderr, "========= depth of trieIndex", nfidx.trieIdx.depth)
 		infos = append(
 			infos,
 			zap.Int("trie_depth", nfidx.trieIdx.depth),
@@ -279,7 +280,7 @@ func (indexUpdater *indexInfo) updateTrie(nfidx *fileIndex, infos []zap.Field, l
 			currFiles[i] = file
 			i++
 		}
-		// fmt.Println("curr files : ",currFiles)
+		// fmt.Println("curr files : ",currFiles,"\nlen : ",len(currFiles))
 		// fmt.Fprintln(os.Stderr, "========= trigram")
 		nfidx.files = currFiles
 		nfidx.idx = trigram.NewIndex(currFiles)
@@ -312,7 +313,8 @@ func (indexUpdater *indexInfo) updateTrie(nfidx *fileIndex, infos []zap.Field, l
 	rdTimeUpdateRuntime := time.Since(tl)
 
 	indexUpdater.UpdateFileIndex(nfidx)
-	fmt.Fprintln(os.Stderr, "========= updated the fileIndex in updateTrie")
+	// fmt.Fprintln(os.Stderr, "========= updated the fileIndex in updateTrie")
+	logger.Info("updated the fileIndex in updateTrie and the updatetime is ",zap.Duration("indexing_runtime", indexingRuntime))
 
 	infos = append(infos,
 		zap.Duration("indexing_runtime", indexingRuntime),
@@ -322,7 +324,7 @@ func (indexUpdater *indexInfo) updateTrie(nfidx *fileIndex, infos []zap.Field, l
 		zap.String("index_type", indexType),
 		zap.Duration("total_runtime", time.Since(t0)),
 	)
-	fmt.Fprintln(os.Stderr, "========= fileIndex updatetime - ", indexingRuntime)
+	// fmt.Fprintln(os.Stderr, "========= fileIndex updatetime - ", indexingRuntime)
 
 	logger.Info("file list updated", infos...)
 }

@@ -340,13 +340,13 @@ func (listener *CarbonserverListener) prepareDataProto(ctx context.Context, logg
 		metricNames[i] = k
 		i++
 	}
-	prin :=  strings.HasPrefix(metricNames[0],"example")
+	// prin :=  strings.HasPrefix(metricNames[0],"example")
 
 	expandedGlobs, err := listener.getExpandedGlobs(ctx, logger, time.Now(), metricNames)
-	if prin {
-		fmt.Println("******=====****** metric names for expandedglobs - ", metricNames )
-		fmt.Println("******=====****** expandedglobs - ", expandedGlobs )
-	}
+	// if prin {
+	// 	fmt.Println("******=====****** metric names for expandedglobs - ", metricNames )
+	// 	fmt.Println("******=====****** expandedglobs - ", expandedGlobs )
+	// }
 
 	if expandedGlobs == nil {
 		return fetchResponse{nil, contentType, 0, 0, 0, nil}, err

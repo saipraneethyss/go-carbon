@@ -44,7 +44,8 @@ temp-test:
 
 test:
 #	make temp-test COMMAND="test -test.v"
-	make temp-test COMMAND="test -v -tags skipchan"
+#	make temp-test COMMAND="test -c"
+	make temp-test COMMAND="test -v -c -tags skipchan"
 #	make temp-test COMMAND="test"
 #	make run-test COMMAND="test"
 #	make run-test COMMAND="vet"

@@ -633,7 +633,7 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 	 * expansion for us */
 
 	query = strings.Replace(query, ".", "/", -1)
-
+	// fmt.Println("*********========********** query is - ", query)
 	var globs []string
 	if !strings.HasSuffix(query, "*") {
 		globs = append(globs, query+".wsp")
@@ -641,12 +641,14 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 			zap.Strings("globs", globs),
 		)
 	}
+	// fmt.Println("*********========********** globs is - ", globs)
 	globs = append(globs, query)
 	globs, err := listener.expandGlobBraces(globs)
 	if err != nil {
 		resultCh <- &ExpandedGlobResponse{query, nil, nil, err}
 		return
 	}
+	fmt.Println("*********========********** globs is - ", globs)
 
 	fidx := listener.CurrentFileIndex()
 	var files []string
@@ -658,6 +660,7 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 	if fidx != nil && !useGlob {
 		// use the index
 		docs := make(map[trigram.DocID]struct{})
+		fmt.Println("*********========********** making trigrams")
 
 		for _, g := range globs {
 			gpath := "/" + g
