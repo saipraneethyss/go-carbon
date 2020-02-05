@@ -281,6 +281,7 @@ type CarbonserverListener struct {
 	// indexUpdater *indexInfo
 	// indexUpdateChan chan MetricUpdate
 	indexUpdateChan chan metrics.MetricUpdate
+	useIdxUptChan bool
 
 	db *leveldb.DB
 }
@@ -523,6 +524,9 @@ func (listener *CarbonserverListener) SetTrigramIndex(enabled bool) {
 func (listener *CarbonserverListener) SetTrieIndex(enabled bool) {
 	listener.trieIndex = enabled
 }
+func (listener *CarbonserverListener) SetUseIdxUptChan(enabled bool) {
+	listener.useIdxUptChan = enabled
+}
 func (listener *CarbonserverListener) SetInternalStatsDir(dbPath string) {
 	listener.internalStatsDir = dbPath
 }
@@ -618,7 +622,10 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 	var useGlob bool
 
 	// TODO: Find out why we have set 'useGlob' if 'star == -1'
-	if star := strings.IndexByte(query, '*'); strings.IndexByte(query, '[') == -1 && strings.IndexByte(query, '?') == -1 && (star == -1 || star == len(query)-1) {
+	if star := strings.IndexByte(query, '*'); strings.IndexByte(query, '[') == -1 &&
+	 strings.IndexByte(query, '?') == -1 &&
+	 (star == -1 || star == len(query)-1) &&
+	 !listener.useIdxUptChan {
 		useGlob = true
 	}
 	logger = logger.With(zap.Bool("use_glob", useGlob))
@@ -633,7 +640,6 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 	 * expansion for us */
 
 	query = strings.Replace(query, ".", "/", -1)
-	// fmt.Println("*********========********** query is - ", query)
 	var globs []string
 	if !strings.HasSuffix(query, "*") {
 		globs = append(globs, query+".wsp")
@@ -641,7 +647,6 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 			zap.Strings("globs", globs),
 		)
 	}
-	// fmt.Println("*********========********** globs is - ", globs)
 	globs = append(globs, query)
 	globs, err := listener.expandGlobBraces(globs)
 	if err != nil {
@@ -704,17 +709,29 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 	leafs := make([]bool, len(files))
 	for i, p := range files {
 		s, err := os.Stat(p)
-		if err != nil {
+		if err == nil {
+			p = p[len(listener.whisperData+"/"):]
+			fmt.Println("p - ",p," s.IsDir() - ",s.IsDir()," HasSuffix - ", strings.HasSuffix(p, ".wsp"),"\n\ts - ",s)
+			if !s.IsDir() && strings.HasSuffix(p, ".wsp") {
+				p = p[:len(p)-4]
+				leafs[i] = true
+			} else {
+				leafs[i] = false
+			}
+			files[i] = strings.Replace(p, "/", ".", -1)
+		}else if os.IsNotExist(err){
+			p = p[len(listener.whisperData+"/"):]
+			if strings.HasSuffix(p, ".wsp") {
+				p = p[:len(p)-4]
+				leafs[i] = true
+			} else {
+				leafs[i] = false
+			}
+			files[i] = strings.Replace(p, "/", ".", -1)
+		}else{
 			continue
 		}
-		p = p[len(listener.whisperData+"/"):]
-		if !s.IsDir() && strings.HasSuffix(p, ".wsp") {
-			p = p[:len(p)-4]
-			leafs[i] = true
-		} else {
-			leafs[i] = false
-		}
-		files[i] = strings.Replace(p, "/", ".", -1)
+
 	}
 
 	matchedCount = len(files)

@@ -69,6 +69,19 @@ func getMetricRetentionAggregation(name string) (schema *persister.Schema, aggr 
     return
 }
 
+func addFileToSys(file string, tmpDir string) error {
+	path := filepath.Dir(file)
+	if err := addFilePathToDir(path,tmpDir); err != nil {
+			return err
+	}
+	if nfile, err := os.OpenFile(filepath.Join(tmpDir, file), os.O_RDONLY|os.O_CREATE, 0644); err ==nil {
+		nfile.Close()
+		return nil
+	} else{
+		return nil
+	}
+}
+
 func addFilePathToDir(filePath string, tmpDir string) error {
 	err := os.MkdirAll(filepath.Join(tmpDir, filePath), 0755)
 	if err != nil {
@@ -138,7 +151,7 @@ func TestIndexUpdateOverChannel(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	for _, filePath := range addFiles {
-		if err = addFilePathToDir(filePath, tmpDir); err != nil {
+		if err = addFileToSys(filePath, tmpDir); err != nil {
 			fmt.Errorf("error creating temp directory for - %s\n error is: %v\n", filePath, err)
 			t.Fatal(err)
 		}

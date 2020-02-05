@@ -122,6 +122,7 @@ type carbonserverConfig struct {
 	MaxMetricsRendered int `toml:"max-metrics-rendered"`
 
 	TrieIndex bool `toml:"trie-index"`
+	UseIdxUptChan bool `toml:"use-idx-upt-chan"`
 }
 
 type pprofConfig struct {
@@ -222,6 +223,7 @@ func NewConfig() *Config {
 			QueryCacheSizeMB:   0,
 			FindCacheEnabled:   true,
 			TrigramIndex:       true,
+			UseIdxUptChan:			true,
 			MaxMetricsGlobbed:  30000,
 			MaxMetricsRendered: 1000,
 		},
