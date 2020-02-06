@@ -21,6 +21,10 @@ type WhisperAggregationItem struct {
 	aggregationMethod    whisper.AggregationMethod
 }
 
+func NewWhisperAggregationItem() *WhisperAggregationItem {
+    return &WhisperAggregationItem{}
+}
+
 // WhisperAggregation ...
 type WhisperAggregation struct {
 	Data    []*WhisperAggregationItem

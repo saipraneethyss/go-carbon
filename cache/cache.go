@@ -10,8 +10,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"strings"
+	"path/filepath"
 
 	"github.com/lomik/go-carbon/helper"
+	"github.com/lomik/go-carbon/helper/stat"
 	"github.com/lomik/go-carbon/points"
 	"github.com/lomik/go-carbon/tags"
 )
@@ -45,6 +48,7 @@ type Cache struct {
 	writeoutQueue *WriteoutQueue
 
 	settings atomic.Value // cacheSettings
+	idxUpdateChan chan stat.MetricUpdate
 
 	stat struct {
 		size                int32  // changing via atomic
@@ -122,6 +126,11 @@ func (c *Cache) SetTagsEnabled(value bool) {
 	newSettings := *s
 	newSettings.tagsEnabled = value
 	c.settings.Store(&newSettings)
+}
+
+func (c *Cache) SetIdxUptChan(idxUptChan chan stat.MetricUpdate) {
+	fmt.Println(" ***********=========> setting idxupdate channel for cache - ", idxUptChan)
+	c.idxUpdateChan = idxUptChan
 }
 
 func (c *Cache) Stop() {}
@@ -230,6 +239,32 @@ func (c *Cache) DivertToXlog(w io.Writer) {
 	c.settings.Store(&newSettings)
 }
 
+func (c *Cache) sendToIdxUptChan(newMetric string, opType stat.MetricOP) {
+	split := strings.Split(newMetric, ".")
+  name := "/"
+  for i, seg := range split {
+      name = filepath.Join(name, seg)
+      if i == len(split) - 1 {
+          name = name + ".wsp"
+      }
+			newMetric := stat.MetricUpdate{
+				Name: name,
+				Operation: opType,
+			}
+			oper := "ADD"
+			if opType == stat.DEL{
+				oper = "DEL"
+			}
+			fmt.Println("******=====****** ",oper," operation in CACHE ;sending this info to channel - ", name )
+				select {
+				case c.idxUpdateChan <-  newMetric:
+				default:
+					fmt.Println( "******=====****** index update channel is full in cache")
+					panic(fmt.Sprintf("index update channel is full, dropping this metric - %v",newMetric.Name))
+				}
+  }
+}
+
 // Sets the given value under the specified key.
 func (c *Cache) Add(p *points.Points) {
 	s := c.settings.Load().(*cacheSettings)
@@ -263,6 +298,7 @@ func (c *Cache) Add(p *points.Points) {
 		values.Data = append(values.Data, p.Data...)
 	} else {
 		shard.items[p.Metric] = p
+		c.sendToIdxUptChan(p.Metric, stat.ADD)
 	}
 	shard.Unlock()
 
@@ -280,6 +316,7 @@ func (c *Cache) Pop(key string) (p *points.Points, exists bool) {
 
 	if exists {
 		atomic.AddInt32(&c.stat.size, -int32(len(p.Data)))
+		c.sendToIdxUptChan(p.Metric, stat.DEL)
 	}
 
 	return p, exists
@@ -304,6 +341,7 @@ func (c *Cache) PopNotConfirmed(key string) (p *points.Points, exists bool) {
 
 	if exists {
 		atomic.AddInt32(&c.stat.size, -int32(len(p.Data)))
+		c.sendToIdxUptChan(p.Metric, stat.DEL)
 	}
 
 	return p, exists

@@ -1,3 +1,5 @@
+// +build !skipchan
+
 package carbonserver
 
 import (

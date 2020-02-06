@@ -181,6 +181,13 @@ func (p *Whisper) updateMany(w *whisper.Whisper, path string, points []*whisper.
 	}
 }
 
+
+func (p *Whisper) Match(metric string) (schema *Schema, aggr *WhisperAggregationItem) {
+    schema = p.schemas.Match(metric)
+    aggr = p.aggregation.Match(metric)
+    return
+}
+
 func (p *Whisper) store(metric string) {
 	// avoid concurrent store same metric
 	// @TODO: may be flock?
@@ -242,13 +249,11 @@ func (p *Whisper) store(metric string) {
 			return
 		}
 
-		schema, ok := p.schemas.Match(metric)
-		if !ok {
+    schema, aggr := p.Match(metric)
+		if schema == nil {
 			p.logger.Error("no storage schema defined for metric", zap.String("metric", metric))
 			return
 		}
-
-		aggr := p.aggregation.Match(metric)
 		if aggr == nil {
 			p.logger.Error("no storage aggregation defined for metric", zap.String("metric", metric))
 			return

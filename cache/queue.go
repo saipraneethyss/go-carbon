@@ -4,6 +4,7 @@ import (
 	"sort"
 	"sync/atomic"
 	"time"
+	"fmt"
 
 	"github.com/lomik/go-carbon/points"
 )
@@ -88,6 +89,7 @@ func (c *Cache) makeQueue() chan string {
 		sort.Sort(byOrderKey(q))
 	}
 
+	fmt.Println(" the queue is - ", q)
 	l := len(q)
 	if l == 0 {
 		return nil

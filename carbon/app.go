@@ -417,7 +417,7 @@ func (app *App) Start() (err error) {
 			return
 		}
 
-		carbonserver := carbonserver.NewCarbonserverListener(core.Get)
+		carbonserver := carbonserver.NewCarbonserverListener(core.Get,app.Persister.Match)
 		carbonserver.SetWhisperData(conf.Whisper.DataDir)
 		carbonserver.SetMaxGlobs(conf.Carbonserver.MaxGlobs)
 		carbonserver.SetFLock(app.Config.Whisper.FLock)
@@ -440,6 +440,9 @@ func (app *App) Start() (err error) {
 		carbonserver.SetInternalStatsDir(conf.Carbonserver.InternalStatsDir)
 		carbonserver.SetPercentiles(conf.Carbonserver.Percentiles)
 		// carbonserver.SetQueryTimeout(conf.Carbonserver.QueryTimeout.Value())
+
+		//set the indx update channel in cache to pass info about new metrics
+		app.Cache.SetIdxUptChan(carbonserver.IdxUptChan)
 
 		if conf.Prometheus.Enabled {
 			carbonserver.InitPrometheus(app.PromRegisterer)
