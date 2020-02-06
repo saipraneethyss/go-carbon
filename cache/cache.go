@@ -203,6 +203,7 @@ func (c *Cache) Confirm(p *points.Points) {
 	shard := c.GetShard(p.Metric)
 
 	shard.Lock()
+	_, remains := shard.items[p.Metric]
 	for i = 0; i < shard.notConfirmedUsed; i++ {
 		if shard.notConfirmed[i] == p {
 			shard.notConfirmed[i] = nil
@@ -212,9 +213,14 @@ func (c *Cache) Confirm(p *points.Points) {
 			}
 
 			shard.notConfirmedUsed--
+		} else if shard.notConfirmed[i].Metric == p.Metric {
+			remains = true
 		}
 	}
 	shard.Unlock()
+	if !remains {
+		c.sendToIdxUptChan(p.Metric, stat.DEL)
+	}
 }
 
 func (c *Cache) Len() int32 {
@@ -341,7 +347,6 @@ func (c *Cache) PopNotConfirmed(key string) (p *points.Points, exists bool) {
 
 	if exists {
 		atomic.AddInt32(&c.stat.size, -int32(len(p.Data)))
-		c.sendToIdxUptChan(p.Metric, stat.DEL)
 	}
 
 	return p, exists
