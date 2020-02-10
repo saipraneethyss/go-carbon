@@ -48,6 +48,32 @@ type FetchTest struct {
 	retention        string
 }
 
+type TestCacheListener struct {
+ idxUpdateChan chan MetricUpdate
+}
+
+func (c TestCacheListener) OnAdd(metricName string) {
+	newMetricUpt := MetricUpdate{metricName, ADD}
+	fmt.Println("******=====****** ADD operation in CACHE ;sending this info to channel - ", metricName )
+	select {
+	case c.idxUpdateChan <-  newMetricUpt:
+	default:
+		fmt.Println( "******=====****** index update channel is full in cache")
+		panic(fmt.Sprintf("index update channel is full, dropping this metric - %v",newMetricUpt.Name))
+	}
+}
+
+func (c TestCacheListener) OnDelete(metricName string) {
+	newMetricUpt := MetricUpdate{metricName, DEL}
+	fmt.Println("******=====****** DEL operation in CACHE ;sending this info to channel - ", metricName )
+	select {
+	case c.idxUpdateChan <-  newMetricUpt:
+	default:
+		fmt.Println( "******=====****** index update channel is full in cache")
+		panic(fmt.Sprintf("index update channel is full, dropping this metric - %v",newMetricUpt.Name))
+	}
+}
+
 func TestExtractTrigrams(t *testing.T) {
 
 	tests := []struct {
@@ -145,7 +171,7 @@ var singleMetricTests = []FetchTest{
 		from:          now - 300,
 		until:         now,
 		now:           now,
-		expectedErr:   "open %f: no such file or directory",
+		expectedErr:   "Metric has no Whisper file and/or has no datapoints in Cache",
 	},
 	{
 		name:          "no-proper-archive",
@@ -301,7 +327,8 @@ func testFetchSingleMetricCommon(t *testing.T, test *FetchTest) {
 	carbonserver.logger = zap.NewNop()
 	carbonserver.metrics = &metricStruct{}
 	precision := 0.000001
-	cache.SetIdxUptChan(carbonserver.IdxUptChan)
+	cacheListener := TestCacheListener{carbonserver.IdxUptChan}
+	cache.SetCacheEventListener(cacheListener)
 
 	test.path = path
 	fmt.Println("Performing test ", test.name)
@@ -474,9 +501,10 @@ func TestExpandGlobsCacheOnlyMetric(t *testing.T) {
 	carbonserver.forceScanChan = make(chan struct{})
 	carbonserver.exitChan = make(chan struct{})
 
-	cache.SetIdxUptChan(carbonserver.IdxUptChan)
+	cacheListener := TestCacheListener{carbonserver.IdxUptChan}
+	cache.SetCacheEventListener(cacheListener)
 
-	go carbonserver.fileListUpdater(carbonserver.whisperData, time.Tick(carbonserver.scanFrequency),
+	go carbonserver.updateMetricsMap(carbonserver.whisperData, time.Tick(carbonserver.scanFrequency),
 	 carbonserver.forceScanChan, carbonserver.exitChan)
 	carbonserver.forceScanChan <- struct{}{}
 	time.Sleep(2 * time.Second)

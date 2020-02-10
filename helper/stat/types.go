@@ -16,16 +16,3 @@ type FileStats struct {
 	MTime    int64
 	MTimeNS  int64
 }
-
-// MetricUpdate type to convey info about new cache adds and deletes
-type MetricOP int
-
-const (
-	ADD MetricOP = iota
-	DEL
-)
-
-type MetricUpdate struct {
-	Name         string
-	Operation    MetricOP
-}

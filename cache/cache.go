@@ -10,11 +10,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"strings"
-	"path/filepath"
 
 	"github.com/lomik/go-carbon/helper"
-	"github.com/lomik/go-carbon/helper/stat"
 	"github.com/lomik/go-carbon/points"
 	"github.com/lomik/go-carbon/tags"
 )
@@ -35,6 +32,10 @@ type cacheSettings struct {
 	tagsEnabled bool
 }
 
+type CacheEventListener interface{
+	OnAdd(string)
+	OnDelete(string)
+}
 // A "thread" safe map of type string:Anything.
 // To avoid lock bottlenecks this map is dived to several (shardCount) map shards.
 type Cache struct {
@@ -48,7 +49,8 @@ type Cache struct {
 	writeoutQueue *WriteoutQueue
 
 	settings atomic.Value // cacheSettings
-	idxUpdateChan chan stat.MetricUpdate
+
+	cacheEventListener CacheEventListener
 
 	stat struct {
 		size                int32  // changing via atomic
@@ -128,9 +130,9 @@ func (c *Cache) SetTagsEnabled(value bool) {
 	c.settings.Store(&newSettings)
 }
 
-func (c *Cache) SetIdxUptChan(idxUptChan chan stat.MetricUpdate) {
-	fmt.Println(" ***********=========> setting idxupdate channel for cache - ", idxUptChan)
-	c.idxUpdateChan = idxUptChan
+func (c *Cache) SetCacheEventListener(cacheEventLstnr CacheEventListener) {
+		fmt.Println(" ***********=========> setting cacheEventLstnr in cache ")
+	c.cacheEventListener = cacheEventLstnr
 }
 
 func (c *Cache) Stop() {}
@@ -219,7 +221,9 @@ func (c *Cache) Confirm(p *points.Points) {
 	}
 	shard.Unlock()
 	if !remains {
-		c.sendToIdxUptChan(p.Metric, stat.DEL)
+		if c.cacheEventListener != nil{
+			c.cacheEventListener.OnDelete(p.Metric)
+		}
 	}
 }
 
@@ -243,32 +247,6 @@ func (c *Cache) DivertToXlog(w io.Writer) {
 	newSettings := *s
 	newSettings.xlog = w
 	c.settings.Store(&newSettings)
-}
-
-func (c *Cache) sendToIdxUptChan(newMetric string, opType stat.MetricOP) {
-	split := strings.Split(newMetric, ".")
-  name := "/"
-  for i, seg := range split {
-      name = filepath.Join(name, seg)
-      if i == len(split) - 1 {
-          name = name + ".wsp"
-      }
-			newMetric := stat.MetricUpdate{
-				Name: name,
-				Operation: opType,
-			}
-			oper := "ADD"
-			if opType == stat.DEL{
-				oper = "DEL"
-			}
-			fmt.Println("******=====****** ",oper," operation in CACHE ;sending this info to channel - ", name )
-				select {
-				case c.idxUpdateChan <-  newMetric:
-				default:
-					fmt.Println( "******=====****** index update channel is full in cache")
-					panic(fmt.Sprintf("index update channel is full, dropping this metric - %v",newMetric.Name))
-				}
-  }
 }
 
 // Sets the given value under the specified key.
@@ -304,7 +282,9 @@ func (c *Cache) Add(p *points.Points) {
 		values.Data = append(values.Data, p.Data...)
 	} else {
 		shard.items[p.Metric] = p
-		c.sendToIdxUptChan(p.Metric, stat.ADD)
+		if c.cacheEventListener != nil {
+			c.cacheEventListener.OnAdd(p.Metric)
+		}
 	}
 	shard.Unlock()
 
@@ -322,7 +302,9 @@ func (c *Cache) Pop(key string) (p *points.Points, exists bool) {
 
 	if exists {
 		atomic.AddInt32(&c.stat.size, -int32(len(p.Data)))
-		c.sendToIdxUptChan(p.Metric, stat.DEL)
+		if c.cacheEventListener != nil {
+			c.cacheEventListener.OnDelete(p.Metric)
+		}
 	}
 
 	return p, exists

@@ -12,7 +12,6 @@ import (
   "context"
 	"regexp"
 	// "strings"
-	// "github.com/lomik/go-carbon/helper/stat"
 	"github.com/lomik/go-carbon/points"
   "github.com/lomik/go-carbon/cache"
 	"github.com/lomik/go-carbon/persister"
@@ -42,6 +41,32 @@ var removeFiles = [...]string{
 	"path/to/file/name2.wsp",
 	"path/to/file1/name1.wsp",
 	"justname.wsp",
+}
+
+type TestCacheListener struct {
+ idxUpdateChan chan MetricUpdate
+}
+
+func (c TestCacheListener) OnAdd(metricName string) {
+	newMetricUpt := MetricUpdate{metricName, ADD}
+	fmt.Println("******=====****** ADD operation in CACHE ;sending this info to channel - ", metricName )
+	select {
+	case c.idxUpdateChan <-  newMetricUpt:
+	default:
+		fmt.Println( "******=====****** index update channel is full in cache")
+		panic(fmt.Sprintf("index update channel is full, dropping this metric - %v",newMetricUpt.Name))
+	}
+}
+
+func (c TestCacheListener) OnDelete(metricName string) {
+	newMetricUpt := MetricUpdate{metricName, DEL}
+	fmt.Println("******=====****** DEL operation in CACHE ;sending this info to channel - ", metricName )
+	select {
+	case c.idxUpdateChan <-  newMetricUpt:
+	default:
+		fmt.Println( "******=====****** index update channel is full in cache")
+		panic(fmt.Sprintf("index update channel is full, dropping this metric - %v",newMetricUpt.Name))
+	}
 }
 
 type testInfo struct {
@@ -113,7 +138,9 @@ func getTestInfo(dir string) *testInfo {
   carbonserver.exitChan = make(chan struct{})
 	// carbonserver.trieIndex = true
 	carbonserver.trigramIndex = true
-  c.SetIdxUptChan(carbonserver.IdxUptChan)
+	cacheListener := TestCacheListener{carbonserver.IdxUptChan}
+	c.SetCacheEventListener(cacheListener)
+  // c.SetIdxUptChan(carbonserver.IdxUptChan)
 
 	return &testInfo{
 		forceChan:       make(chan struct{}),
@@ -142,7 +169,12 @@ func (f *testInfo) checkexpandblobs(t *testing.T, query string, shdExist bool){
 	if shdExist{
 		file := expandedGlobs[0].Files[0]
 		if file != query {
-					t.Errorf("files: '%v', epxected: '%s'\n", file, query)
+			t.Errorf("files: '%v', epxected: '%s'\n", file, query)
+			return
+		}
+	} else {
+		if len(expandedGlobs[0].Files) !=0 {
+			t.Errorf("expected no files but found - '%v'\n",expandedGlobs[0].Files)
 			return
 		}
 	}
@@ -167,7 +199,7 @@ func TestIndexUpdateOverChannel(t *testing.T) {
 	f := getTestInfo(tmpDir)
 
   //start filewalk
-	go f.csListener.fileListUpdater(tmpDir, f.scanFrequency, f.forceChan, f.exitChan)
+	go f.csListener.updateMetricsMap(tmpDir, f.scanFrequency, f.forceChan, f.exitChan)
 	f.forceChan <- struct{}{}
 	time.Sleep(2 * time.Second)
 
@@ -184,6 +216,7 @@ func TestIndexUpdateOverChannel(t *testing.T) {
 	//pop metric from cache
 	m1 := f.testCache.WriteoutQueue().Get(nil)
 	p1, _ := f.testCache.PopNotConfirmed(m1)
+	f.testCache.Confirm(p1)
 
 	if !p1.Eq(points.OnePoint(addMetrics[4],4,10)) {
 		fmt.Printf("error - recived wrong point - %v\n",p1)
@@ -206,6 +239,7 @@ func TestIndexUpdateOverChannel(t *testing.T) {
 	//pop metric from cache
 	m2 := f.testCache.WriteoutQueue().Get(nil)
 	p2, _ := f.testCache.PopNotConfirmed(m2)
+	f.testCache.Confirm(p2)
 
 	// queue within cache is sorted by length of metric name for some reason
 	if !p2.Eq(points.OnePoint(addMetrics[0],0,10)) {

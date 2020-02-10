@@ -99,6 +99,19 @@ const (
 	DataIsAvailable
 )
 
+// MetricUpdate type to convey info about new cache adds and deletes
+type MetricOP int
+
+const (
+	ADD MetricOP = iota
+	DEL
+)
+
+type MetricUpdate struct {
+	Name         string
+	Operation    MetricOP
+}
+
 type QueryItem struct {
 	Data          atomic.Value
 	Flags         uint64 // DataIsAvailable or QueryIsPending
@@ -272,8 +285,7 @@ type CarbonserverListener struct {
 	requestsTimes requestsTimes
 	exitChan      chan struct{}
 	timeBuckets   []uint64
-	IdxUptChan		chan stat.MetricUpdate
-	metricsMap    map[string]struct{}
+	IdxUptChan		chan MetricUpdate
 	persisterMatch    func(key string) (*persister.Schema, *persister.WhisperAggregationItem)
 
 	prometheus prometheus
@@ -463,8 +475,7 @@ func NewCarbonserverListener(cacheGetFunc func(key string) []points.Point,
 		accessLogger:      zapwriter.Logger("access"),
 		findCache:         queryCache{ec: expirecache.New(0)},
 		trigramIndex:      true,
-		IdxUptChan:				 make(chan stat.MetricUpdate,100),
-		metricsMap:    		 make(map[string]struct{}),
+		IdxUptChan:				 make(chan MetricUpdate,100),
 		percentiles:       []int{100, 99, 98, 95, 75, 50},
 		prometheus: prometheus{
 			request:          func(string, int) {},
@@ -599,7 +610,10 @@ func (listener *CarbonserverListener) UpdateMetricsAccessTimesByRequest(metrics 
 	listener.UpdateMetricsAccessTimes(accessTimes, false)
 }
 
-func (listener *CarbonserverListener) updateMetricsMap(exit <-chan struct{}){
+func (listener *CarbonserverListener) updateMetricsMap(dir string, tick <-chan time.Time, force <-chan struct{}, exit <-chan struct{}){
+	metricsMap := make(map[string]struct{})
+	flushMetricsChan := make(chan map[string]struct{})
+	go listener.fileListUpdater(dir,exit,flushMetricsChan)
 	for{
 		select{
 			case <-exit:
@@ -607,37 +621,38 @@ func (listener *CarbonserverListener) updateMetricsMap(exit <-chan struct{}){
 				return
 			case update := <- listener.IdxUptChan:
 				switch update.Operation {
-				case stat.ADD:
+				case ADD:
 					fmt.Println(" ***********=========> Received ADD operation for - ",update.Name)
 					// append to index
-					listener.metricsMap[update.Name] = struct{}{}
-				case stat.DEL:
+					metricsMap[update.Name] = struct{}{}
+				case DEL:
 					fmt.Println(" ***********=========> Received DEL operation for - ",update.Name)
 					//delete from index
-					delete(listener.metricsMap, update.Name)
-			}
+					delete(metricsMap, update.Name)
+				}
+			case <-tick:
+			case <-force:
+				fmt.Println("***********=========> Received FORCED_SCAN signal")
 		}
+		newMetrics := metricsMap
+		flushMetricsChan <- newMetrics
 	}
 }
 
-func (listener *CarbonserverListener) fileListUpdater(dir string, tick <-chan time.Time, force <-chan struct{}, exit <-chan struct{}) {
-	fmt.Println("***********=========> calling go routine on indexmap")
-	go listener.updateMetricsMap(exit)
+func (listener *CarbonserverListener) fileListUpdater(dir string, exit <-chan struct{}, flushMetricsChan <- chan map[string]struct{}) {
 	for {
 		select {
 		case <-exit:
 			fmt.Println("***********=========> Received EXIT signal in fileListUpdater")
 			return
-		case <-tick:
-		case <-force:
-			fmt.Println("***********=========> Received FORCED_SCAN signal")
+		case newCacheMetrics := <-flushMetricsChan:
+			fmt.Println("***********=========> calling updateFileList")
+			listener.updateFileList(dir, newCacheMetrics)
 		}
-		fmt.Println("***********=========> calling updateFileList")
-		listener.updateFileList(dir)
 	}
 }
 
-func (listener *CarbonserverListener) updateFileList(dir string) {
+func (listener *CarbonserverListener) updateFileList(dir string, newCacheMetrics map[string]struct{}) {
 	logger := listener.logger.With(zap.String("handler", "fileListUpdated"))
 	defer func() {
 		if r := recover(); r != nil {
@@ -659,16 +674,24 @@ func (listener *CarbonserverListener) updateFileList(dir string) {
 
 	//add files from cache index map
 	//handle filesLen++
-	for fileName := range listener.metricsMap {
-		if listener.trieIndex {
-			if err := trieIdx.insert(fileName); err != nil {
-				logger.Error("error populating index from cache indexMap",
-					zap.Error(err),
-				)
-			}
-		} else {
-			files = append(files, fileName)
-		}
+	for newMetric := range newCacheMetrics {
+		split := strings.Split(newMetric, ".")
+	  fileName := "/"
+	  for i, seg := range split {
+	      fileName = filepath.Join(fileName, seg)
+	      if i == len(split) - 1 {
+	          fileName = fileName + ".wsp"
+	      }
+				if listener.trieIndex {
+					if err := trieIdx.insert(fileName); err != nil {
+						logger.Error("error populating index from cache indexMap",
+							zap.Error(err),
+						)
+					}
+				} else {
+					files = append(files, fileName)
+				}
+	  }
 	}
 
 
@@ -685,7 +708,7 @@ func (listener *CarbonserverListener) updateFileList(dir string) {
 			trimmedName := strings.TrimPrefix(p, listener.whisperData)
 			filesLen++
 
-			if _, present := listener.metricsMap[trimmedName]; !present{
+			if _, present := newCacheMetrics[trimmedName]; !present{
 				if listener.trieIndex {
 					if err := trieIdx.insert(trimmedName); err != nil {
 						return fmt.Errorf("updateFileList.trie: %s", err)
@@ -1167,7 +1190,7 @@ func (listener *CarbonserverListener) Listen(listen string) error {
 	listener.exitChan = make(chan struct{})
 	if (listener.trigramIndex || listener.trieIndex) && listener.scanFrequency != 0 {
 		listener.forceScanChan = make(chan struct{})
-		go listener.fileListUpdater(listener.whisperData, time.Tick(listener.scanFrequency), listener.forceScanChan, listener.exitChan)
+		go listener.updateMetricsMap(listener.whisperData, time.Tick(listener.scanFrequency), listener.forceScanChan, listener.exitChan)
 		listener.forceScanChan <- struct{}{}
 	}
 

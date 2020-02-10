@@ -33,6 +33,27 @@ type NamedReceiver struct {
 	Name string
 }
 
+type CacheListener struct {
+ idxUpdateChan chan carbonserver.MetricUpdate
+}
+
+func (c CacheListener) OnAdd(metricName string) {
+	newMetricUpt := carbonserver.MetricUpdate{metricName, carbonserver.ADD}
+	select {
+	case c.idxUpdateChan <-  newMetricUpt:
+	default:
+		panic(fmt.Sprintf("index update channel is full, dropping this metric - %v",newMetricUpt.Name))
+	}
+}
+func (c CacheListener) OnDelete(metricName string) {
+	newMetricUpt := carbonserver.MetricUpdate{metricName, carbonserver.DEL}
+	select {
+	case c.idxUpdateChan <-  newMetricUpt:
+	default:
+		panic(fmt.Sprintf("index update channel is full, dropping this metric - %v",newMetricUpt.Name))
+	}
+}
+
 type App struct {
 	sync.RWMutex
 	ConfigFilename string
@@ -441,8 +462,9 @@ func (app *App) Start() (err error) {
 		carbonserver.SetPercentiles(conf.Carbonserver.Percentiles)
 		// carbonserver.SetQueryTimeout(conf.Carbonserver.QueryTimeout.Value())
 
-		//set the indx update channel in cache to pass info about new metrics
-		app.Cache.SetIdxUptChan(carbonserver.IdxUptChan)
+		//set the cacheListener interface in cache to pass info about new metrics
+		cacheListener := CacheListener{carbonserver.IdxUptChan}
+		app.Cache.SetCacheEventListener(cacheListener)
 
 		if conf.Prometheus.Enabled {
 			carbonserver.InitPrometheus(app.PromRegisterer)
