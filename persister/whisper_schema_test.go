@@ -164,18 +164,18 @@ priority = 10
 		},
 	)
 
-	matched, ok := schemas.Match("db.collector.cpu")
-	if assert.True(ok) {
+	matched := schemas.Match("db.collector.cpu")
+	if assert.NotNil(matched) {
 		assert.Equal("collector", matched.Name)
 	}
 
-	matched, ok = schemas.Match("db.mysql.rps")
-	if assert.True(ok) {
+	matched = schemas.Match("db.mysql.rps")
+	if assert.NotNil(matched) {
 		assert.Equal("db", matched.Name)
 	}
 
-	matched, ok = schemas.Match("unknown")
-	assert.False(ok)
+	matched = schemas.Match("unknown")
+	assert.Nil(matched)
 }
 
 func TestSchemasNotFound(t *testing.T) {

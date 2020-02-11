@@ -38,7 +38,10 @@ type CacheListener struct {
 }
 
 func (c CacheListener) OnAdd(metricName string) {
-	newMetricUpt := carbonserver.MetricUpdate{metricName, carbonserver.ADD}
+	newMetricUpt := carbonserver.MetricUpdate{
+		Name: metricName,
+		Operation: carbonserver.ADD,
+	}
 	select {
 	case c.idxUpdateChan <-  newMetricUpt:
 	default:
@@ -46,7 +49,10 @@ func (c CacheListener) OnAdd(metricName string) {
 	}
 }
 func (c CacheListener) OnDelete(metricName string) {
-	newMetricUpt := carbonserver.MetricUpdate{metricName, carbonserver.DEL}
+	newMetricUpt := carbonserver.MetricUpdate{
+		Name: metricName,
+		Operation: carbonserver.DEL,
+	}
 	select {
 	case c.idxUpdateChan <-  newMetricUpt:
 	default:

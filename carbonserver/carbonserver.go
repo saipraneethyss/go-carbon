@@ -634,7 +634,11 @@ func (listener *CarbonserverListener) updateMetricsMap(dir string, tick <-chan t
 			case <-force:
 				fmt.Println("***********=========> Received FORCED_SCAN signal")
 		}
-		newMetrics := metricsMap
+		// newMetrics := metricsMap
+		newMetrics := make(map[string]struct{})
+		for eachMetric := range metricsMap{
+			newMetrics[eachMetric] = struct{}{}
+		}
 		flushMetricsChan <- newMetrics
 	}
 }
