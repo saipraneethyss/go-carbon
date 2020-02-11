@@ -34,7 +34,7 @@ type NamedReceiver struct {
 }
 
 type CacheListener struct {
- idxUpdateChan chan carbonserver.MetricUpdate
+	idxUpdateChan chan carbonserver.MetricUpdate
 }
 
 func (c CacheListener) OnAdd(metricName string) {

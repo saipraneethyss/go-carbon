@@ -285,8 +285,9 @@ type CarbonserverListener struct {
 	requestsTimes requestsTimes
 	exitChan      chan struct{}
 	timeBuckets   []uint64
-	IdxUptChan		chan MetricUpdate
-	persisterMatch    func(key string) (*persister.Schema, *persister.WhisperAggregationItem)
+
+	IdxUptChan	chan MetricUpdate
+	persisterMatch  func(key string) (*persister.Schema, *persister.WhisperAggregationItem)
 
 	prometheus prometheus
 
@@ -475,7 +476,7 @@ func NewCarbonserverListener(cacheGetFunc func(key string) []points.Point,
 		accessLogger:      zapwriter.Logger("access"),
 		findCache:         queryCache{ec: expirecache.New(0)},
 		trigramIndex:      true,
-		IdxUptChan:				 make(chan MetricUpdate,100),
+		IdxUptChan:        make(chan MetricUpdate,100),
 		percentiles:       []int{100, 99, 98, 95, 75, 50},
 		prometheus: prometheus{
 			request:          func(string, int) {},
@@ -615,31 +616,28 @@ func (listener *CarbonserverListener) updateMetricsMap(dir string, tick <-chan t
 	flushMetricsChan := make(chan map[string]struct{})
 	go listener.fileListUpdater(dir,exit,flushMetricsChan)
 	for{
+		newMetrics := make(map[string]struct{})
 		select{
 			case <-exit:
-				fmt.Println("***********=========> Received EXIT signal in updateMetricsMap")
 				return
-			case update := <- listener.IdxUptChan:
+			case update := <-listener.IdxUptChan:
 				switch update.Operation {
 				case ADD:
-					fmt.Println(" ***********=========> Received ADD operation for - ",update.Name)
 					// append to index
 					metricsMap[update.Name] = struct{}{}
 				case DEL:
-					fmt.Println(" ***********=========> Received DEL operation for - ",update.Name)
 					//delete from index
 					delete(metricsMap, update.Name)
 				}
 			case <-tick:
+				for eachMetric := range metricsMap{
+					newMetrics[eachMetric] = struct{}{}
+				}
+				flushMetricsChan <- newMetrics
+				fmt.Println("*******=========******* the size of the channel on every filescan tick - ",len(listener.IdxUptChan))
 			case <-force:
-				fmt.Println("***********=========> Received FORCED_SCAN signal")
+				flushMetricsChan <- newMetrics
 		}
-		// newMetrics := metricsMap
-		newMetrics := make(map[string]struct{})
-		for eachMetric := range metricsMap{
-			newMetrics[eachMetric] = struct{}{}
-		}
-		flushMetricsChan <- newMetrics
 	}
 }
 
@@ -647,10 +645,8 @@ func (listener *CarbonserverListener) fileListUpdater(dir string, exit <-chan st
 	for {
 		select {
 		case <-exit:
-			fmt.Println("***********=========> Received EXIT signal in fileListUpdater")
 			return
 		case newCacheMetrics := <-flushMetricsChan:
-			fmt.Println("***********=========> calling updateFileList")
 			listener.updateFileList(dir, newCacheMetrics)
 		}
 	}
@@ -680,22 +676,21 @@ func (listener *CarbonserverListener) updateFileList(dir string, newCacheMetrics
 	//handle filesLen++
 	for newMetric := range newCacheMetrics {
 		split := strings.Split(newMetric, ".")
-	  fileName := "/"
-	  for i, seg := range split {
-	      fileName = filepath.Join(fileName, seg)
-	      if i == len(split) - 1 {
-	          fileName = fileName + ".wsp"
-	      }
-				if listener.trieIndex {
-					if err := trieIdx.insert(fileName); err != nil {
-						logger.Error("error populating index from cache indexMap",
-							zap.Error(err),
-						)
-					}
-				} else {
-					files = append(files, fileName)
+		fileName := "/"
+		for i, seg := range split {
+			fileName = filepath.Join(fileName, seg)
+			if i == len(split) - 1 {
+				fileName = fileName + ".wsp"
+			}
+			if listener.trieIndex {
+				if err := trieIdx.insert(fileName); err != nil {
+					logger.Error("error populating index from cache indexMap",
+					zap.Error(err),)
 				}
-	  }
+			} else {
+				files = append(files, fileName)
+			}
+		}
 	}
 
 
@@ -869,11 +864,12 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 
 	// TODO: Find out why we have set 'useGlob' if 'star == -1'
 	if star := strings.IndexByte(query, '*'); strings.IndexByte(query, '[') == -1 &&
-	 strings.IndexByte(query, '?') == -1 &&
-	 (star == -1 || star == len(query)-1) &&
-	 !listener.trigramIndex {
-		useGlob = true
-	}
+	        strings.IndexByte(query, '?') == -1 &&
+                (star == -1 || star == len(query)-1) &&
+                !listener.trigramIndex {
+                useGlob = true
+        }
+
 	logger = logger.With(zap.Bool("use_glob", useGlob))
 
 	/* things to glob:
@@ -956,7 +952,6 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 	s, err := os.Stat(p)
 	if err == nil {
 		p = p[len(listener.whisperData+"/"):]
-		// fmt.Println("p - ",p," s.IsDir() - ",s.IsDir()," HasSuffix - ", strings.HasSuffix(p, ".wsp"),"\n\ts - ",s)
 		if !s.IsDir() && strings.HasSuffix(p, ".wsp") {
 			p = p[:len(p)-4]
 			leafs[i] = true
@@ -974,7 +969,7 @@ func (listener *CarbonserverListener) expandGlobs(ctx context.Context, query str
 		}
 		files[i] = strings.Replace(p, "/", ".", -1)
 		} else{
-		continue
+			continue
 		}
 	}
 

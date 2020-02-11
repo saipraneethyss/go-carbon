@@ -131,7 +131,6 @@ func (c *Cache) SetTagsEnabled(value bool) {
 }
 
 func (c *Cache) SetCacheEventListener(cacheEventLstnr CacheEventListener) {
-		fmt.Println(" ***********=========> setting cacheEventLstnr in cache ")
 	c.cacheEventListener = cacheEventLstnr
 }
 

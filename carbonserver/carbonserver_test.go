@@ -9,11 +9,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-  "regexp"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
-  "context"
+	"context"
 
 	"github.com/dgryski/go-trigram"
 	"github.com/go-graphite/go-whisper"
@@ -37,7 +37,7 @@ type FetchTest struct {
 	until            int
 	createWhisper    bool
 	fillWhisper      bool
-    fillCache        bool
+	fillCache        bool
 	errIsNil         bool
 	dataIsNil        bool
 	cachePoints      []point
@@ -49,7 +49,7 @@ type FetchTest struct {
 }
 
 type TestCacheListener struct {
- idxUpdateChan chan MetricUpdate
+	idxUpdateChan chan MetricUpdate
 }
 
 func (c TestCacheListener) OnAdd(metricName string) {
@@ -130,11 +130,11 @@ func generalFetchSingleMetricInit(testData *FetchTest, cache *cache.Cache) error
 			}
 		}
 		wsp.Close()
-    }
-    if testData.fillCache {
-        for _, p := range testData.cachePoints {
-            cache.Add(points.OnePoint(testData.name, p.Value, int64(p.Timestamp)))
-        }
+	}
+	if testData.fillCache {
+		for _, p := range testData.cachePoints {
+			cache.Add(points.OnePoint(testData.name, p.Value, int64(p.Timestamp)))
+		}
 	}
 	return nil
 }
@@ -298,20 +298,20 @@ func getSingleMetricTest(name string) *FetchTest {
 }
 
 func getMetricRetentionAggregation(name string) (schema *persister.Schema, aggr *persister.WhisperAggregationItem) {
-    retentionStr := "60s:90d"
-    pattern, _ := regexp.Compile(".*")
-    retentions, _ := persister.ParseRetentionDefs(retentionStr)
-    f := false
-    schema = &persister.Schema{
-        Name:         "test",
-        Pattern:      pattern,
-        RetentionStr: retentionStr,
-        Retentions:   retentions,
-        Priority:     10,
-        Compressed:   &f,
-    }
-    aggr = persister.NewWhisperAggregation().Match(name)
-    return
+	retentionStr := "60s:90d"
+	pattern, _ := regexp.Compile(".*")
+	retentions, _ := persister.ParseRetentionDefs(retentionStr)
+	f := false
+	schema = &persister.Schema{
+		Name:         "test",
+		Pattern:      pattern,
+		RetentionStr: retentionStr,
+		Retentions:   retentions,
+		Priority:     10,
+		Compressed:   &f,
+	}
+	aggr = persister.NewWhisperAggregation().Match(name)
+	return
 }
 
 func testFetchSingleMetricCommon(t *testing.T, test *FetchTest) {
@@ -484,8 +484,8 @@ func TestGetMetricsListWithData(t *testing.T) {
 }
 
 func TestExpandGlobsCacheOnlyMetric(t *testing.T) {
-    query := "some.path.data-cache-only"
-    cache := cache.New()
+	query := "some.path.data-cache-only"
+	cache := cache.New()
 	path, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatal(err)
@@ -493,7 +493,7 @@ func TestExpandGlobsCacheOnlyMetric(t *testing.T) {
 	defer os.RemoveAll(path)
 
 	carbonserver := NewCarbonserverListener(cache.Get, getMetricRetentionAggregation)
-  carbonserver.trieIndex = true
+	carbonserver.trieIndex = true
 	carbonserver.whisperData = path
 	carbonserver.logger = zap.NewNop()
 	carbonserver.metrics = &metricStruct{}
@@ -511,21 +511,19 @@ func TestExpandGlobsCacheOnlyMetric(t *testing.T) {
 	cache.Add(points.OnePoint(query, 0, int64(now-60)))
 	time.Sleep(3 * time.Second)
 
-  // carbonserver.updateFileList(path)
 	expandedGlobs, err := carbonserver.getExpandedGlobs(context.TODO(), zap.NewNop(), time.Now(), []string{query})
 	if err != nil {
 		t.Errorf("Unexpected err: '%v', expected: 'nil'", err)
 		return
 	}
-
-    if expandedGlobs == nil {
-        t.Errorf("No globs returned")
-        return
-    }
-		fmt.Println("expandGlobs - " ,expandedGlobs)
-    file := expandedGlobs[0].Files[0]
+	if expandedGlobs == nil {
+		t.Errorf("No globs returned")
+		return
+	}
+	fmt.Println("expandGlobs - " ,expandedGlobs)
+	file := expandedGlobs[0].Files[0]
 	if file != query {
-        t.Errorf("files: '%v', epxected: '%s'\n", file, query)
+		t.Errorf("files: '%v', epxected: '%s'\n", file, query)
 		return
 	}
 	close(carbonserver.exitChan)

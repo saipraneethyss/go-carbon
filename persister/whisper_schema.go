@@ -25,10 +25,10 @@ type Schema struct {
 }
 
 func (s Schema) ResolveRetentions() (retentions []whisper.Retention) {
-    for _, retention := range s.Retentions {
-        retentions = append(retentions, *retention)
-    }
-    return
+	for _, retention := range s.Retentions {
+		retentions = append(retentions, *retention)
+	}
+	return
 }
 
 // WhisperSchemas contains schema settings

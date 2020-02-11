@@ -99,6 +99,7 @@ func (listener *CarbonserverListener) fetchSingleMetric(metric string, pathExpre
 	)
 	m, err := listener.fetchFromDisk(metric, fromTime, untilTime)
 	if err == nil {
+		// Should never happen, because we have a check for proper archive now
 		if m.Timeseries == nil {
 			atomic.AddUint64(&listener.metrics.RenderErrors, 1)
 			logger.Warn("metric time range not found")
@@ -149,7 +150,6 @@ func (listener *CarbonserverListener) fetchSingleMetric(metric string, pathExpre
 
 		return resp, nil
 	} else {
-		// Should never happen, because we have a check for proper archive now
 		atomic.AddUint64(&listener.metrics.RenderErrors, 1)
 		logger.Warn("failed to fetch points", zap.Error(err))
 		return response{}, err

@@ -22,7 +22,7 @@ type WhisperAggregationItem struct {
 }
 
 func NewWhisperAggregationItem() *WhisperAggregationItem {
-    return &WhisperAggregationItem{}
+	return &WhisperAggregationItem{}
 }
 
 // WhisperAggregation ...

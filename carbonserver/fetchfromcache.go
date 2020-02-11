@@ -13,7 +13,7 @@ import (
 	"github.com/lomik/go-carbon/points"
 )
 
-//https://groups.google.com/d/msg/golang-nuts/xj7CV857vAg/KiCemq_KSI4J
+// https://github.com/golang/go/issues/448
 func mod(a, b int) int {
 	m := a % b
 	if m < 0 {
@@ -29,8 +29,6 @@ func interval(time int, secondsPerPoint int) int {
 
 func (listener *CarbonserverListener) fetchFromCache(metric string, fromTime, untilTime int32, resp *response) ([]points.Point, error) {
 	var step int32
-  // expandGlobs() should filter out non-existant metrics
-	// so if we get here we are querying on cache-only metrics
 	path := listener.whisperData + "/" + strings.Replace(metric, ".", "/", -1) + ".wsp"
 
 	logger := listener.logger.With(
@@ -55,7 +53,7 @@ func (listener *CarbonserverListener) fetchFromCache(metric string, fromTime, un
 
 	logger.Debug("fetching cache only metric")
 
-  // retentions, aggMethod, xFilesFactor from matched schema/agg
+	// retentions, aggMethod, xFilesFactor from matched schema/agg
 	schema, aggr := listener.persisterMatch(metric)
 	if schema == nil {
 		logger.Warn("no storage schema defined for metric", zap.String("metric", metric))

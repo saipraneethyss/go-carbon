@@ -183,9 +183,9 @@ func (p *Whisper) updateMany(w *whisper.Whisper, path string, points []*whisper.
 
 
 func (p *Whisper) Match(metric string) (schema *Schema, aggr *WhisperAggregationItem) {
-    schema = p.schemas.Match(metric)
-    aggr = p.aggregation.Match(metric)
-    return
+	schema = p.schemas.Match(metric)
+	aggr = p.aggregation.Match(metric)
+	return
 }
 
 func (p *Whisper) store(metric string) {
@@ -248,8 +248,7 @@ func (p *Whisper) store(metric string) {
 
 			return
 		}
-
-    schema, aggr := p.Match(metric)
+		schema, aggr := p.Match(metric)
 		if schema == nil {
 			p.logger.Error("no storage schema defined for metric", zap.String("metric", metric))
 			return
